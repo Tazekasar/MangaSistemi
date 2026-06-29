@@ -3,6 +3,7 @@ import sqlite3
 import zipfile
 import io
 import time
+import shutil  # Dosya silme işlemleri için eklendi
 from datetime import datetime
 from flask import Flask, jsonify, request, render_template, send_file, session, send_from_directory
 from werkzeug.utils import secure_filename
@@ -48,7 +49,8 @@ def init_db():
     # averisadmin kullanıcısı yoksa otomatik ekle
     cursor.execute('SELECT * FROM users WHERE username = ?', ('averisadmin',))
     if not cursor.fetchone():
-        default_pw = generate_password_hash('admin123')
+        # ŞİFRE BURADA GÜNCELLENDİ
+        default_pw = generate_password_hash('averis?yonetim')
         cursor.execute('INSERT INTO users (username, password, roles, profile_pic) VALUES (?, ?, ?, ?)', ('averisadmin', default_pw, 'Controller', None))
 
     conn.commit()
@@ -66,7 +68,8 @@ def kurtar():
         init_db()
         conn = get_db()
         cursor = conn.cursor()
-        default_pw = generate_password_hash('admin123')
+        # ŞİFRE BURADA GÜNCELLENDİ
+        default_pw = generate_password_hash('averis?yonetim')
         cursor.execute('SELECT * FROM users WHERE username = ?', ('averisadmin',))
         if cursor.fetchone():
             cursor.execute('UPDATE users SET password = ?, roles = ? WHERE username = ?', (default_pw, 'Controller', 'averisadmin'))
@@ -74,7 +77,7 @@ def kurtar():
             cursor.execute('INSERT INTO users (username, password, roles, profile_pic) VALUES (?, ?, ?, ?)', ('averisadmin', default_pw, 'Controller', None))
         conn.commit()
         conn.close()
-        return "Sistem Başarıyla Sıfırlandı! K.Adı: averisadmin | Şifre: admin123"
+        return "Sistem Başarıyla Sıfırlandı! K.Adı: averisadmin | Şifre: averis?yonetim"
     except Exception as e:
         return f"Hata: {str(e)}"
 
@@ -360,3 +363,56 @@ def download_zip(chapter_id, stage_filter):
             if os.path.exists(f['filepath']): zf.write(f['filepath'], f['filename'])
     memory_file.seek(0)
     return send_file(memory_file, mimetype='application/zip', as_attachment=True, download_name=f"bolum_{chapter_id}_{stage_filter}.zip")
+
+# --- YENİ EKLENEN SİLME İŞLEMLERİ (SADECE YÖNETİCİLER İÇİN) ---
+
+@app.route('/api/admin/series/<int:series_id>', methods=['DELETE'])
+def delete_series_api(series_id):
+    if 'Controller' not in session.get('roles', ''): 
+        return jsonify({'error': 'Yetkisiz erişim'}), 403
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT id FROM chapters WHERE series_id = ?', (series_id,))
+    chapters = cursor.fetchall()
+    
+    for ch in chapters:
+        chapter_id = ch['id']
+        folder_path = os.path.join(app.config['UPLOAD_FOLDER'], f'chapter_{chapter_id}')
+        try:
+            shutil.rmtree(folder_path)
+        except:
+            pass
+            
+    cursor.execute('DELETE FROM files WHERE chapter_id IN (SELECT id FROM chapters WHERE series_id = ?)', (series_id,))
+    cursor.execute('DELETE FROM chapters WHERE series_id = ?', (series_id,))
+    cursor.execute('DELETE FROM series WHERE id = ?', (series_id,))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'success': True})
+
+@app.route('/api/admin/chapters/<int:chapter_id>', methods=['DELETE'])
+def delete_chapter_api(chapter_id):
+    if 'Controller' not in session.get('roles', ''): 
+        return jsonify({'error': 'Yetkisiz erişim'}), 403
+        
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    folder_path = os.path.join(app.config['UPLOAD_FOLDER'], f'chapter_{chapter_id}')
+    try:
+        shutil.rmtree(folder_path)
+    except:
+        pass
+        
+    cursor.execute('DELETE FROM files WHERE chapter_id = ?', (chapter_id,))
+    cursor.execute('DELETE FROM chapters WHERE id = ?', (chapter_id,))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'success': True})
+
+if __name__ == '__main__':
+    app.run(debug=True)
