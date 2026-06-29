@@ -3,7 +3,8 @@ import sqlite3
 import zipfile
 import io
 import time
-import shutil  # Dosya silme işlemleri için eklendi
+import shutil
+import re  # ZIP isimlerini düzenlerken geçersiz karakterleri temizlemek için eklendi
 from datetime import datetime
 from flask import Flask, jsonify, request, render_template, send_file, session, send_from_directory
 from werkzeug.utils import secure_filename
@@ -12,7 +13,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 app = Flask(__name__)
 app.secret_key = 'manga_gizli_anahtar_123'
 
-# Maksimum 500 MB dosya yükleme izni
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -27,7 +27,6 @@ def allowed_file(filename, allowed_set):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_set
 
 def get_db():
-    # timeout=30 ile canlı sunuculardaki veritabanı kilitlenme hataları engellenir
     conn = sqlite3.connect(DB_FILE, timeout=30)
     conn.row_factory = sqlite3.Row
     return conn
@@ -46,21 +45,28 @@ def init_db():
     cursor.execute('''CREATE TABLE IF NOT EXISTS files (id INTEGER PRIMARY KEY AUTOINCREMENT, chapter_id INTEGER, stage TEXT, uploader_id INTEGER, filename TEXT, filepath TEXT, uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS task_history (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, stage TEXT, completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
 
-    # averisadmin kullanıcısı yoksa otomatik ekle
+    try:
+        cursor.execute('ALTER TABLE chapters ADD COLUMN cleaner_id INTEGER')
+        cursor.execute('ALTER TABLE chapters ADD COLUMN proofreader_id INTEGER')
+        cursor.execute('ALTER TABLE chapters ADD COLUMN is_cleaned BOOLEAN DEFAULT 0')
+        cursor.execute('ALTER TABLE chapters ADD COLUMN is_proofread BOOLEAN DEFAULT 0')
+        conn.commit()
+        
+        cursor.execute("UPDATE chapters SET status = 'PENDING_PARALLEL', is_proofread = 1, cleaner_id = assigned_to, assigned_to = NULL WHERE status = 'PENDING_CLEANING'")
+        cursor.execute("UPDATE chapters SET status = 'PENDING_PARALLEL', is_cleaned = 1, proofreader_id = assigned_to, assigned_to = NULL WHERE status = 'PENDING_PROOFREADING'")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass 
+
     cursor.execute('SELECT * FROM users WHERE username = ?', ('averisadmin',))
     if not cursor.fetchone():
-        # ŞİFRE BURADA GÜNCELLENDİ
         default_pw = generate_password_hash('averis?yonetim')
         cursor.execute('INSERT INTO users (username, password, roles, profile_pic) VALUES (?, ?, ?, ?)', ('averisadmin', default_pw, 'Controller', None))
 
     conn.commit()
     conn.close()
 
-# Sunucu her uyandığında veritabanını sağlama al
 init_db()
-
-PIPELINE = ['PENDING_TRANSLATION', 'PENDING_CLEANING', 'PENDING_TYPESETTING', 'PENDING_PROOFREADING', 'PENDING_PUBLISHING', 'PUBLISHED']
-ROLE_MAP = {'PENDING_TRANSLATION': 'Translator', 'PENDING_CLEANING': 'Cleaner', 'PENDING_TYPESETTING': 'Typesetter', 'PENDING_PROOFREADING': 'Proofreader', 'PENDING_PUBLISHING': 'Controller'}
 
 @app.route('/kurtar')
 def kurtar():
@@ -68,7 +74,6 @@ def kurtar():
         init_db()
         conn = get_db()
         cursor = conn.cursor()
-        # ŞİFRE BURADA GÜNCELLENDİ
         default_pw = generate_password_hash('averis?yonetim')
         cursor.execute('SELECT * FROM users WHERE username = ?', ('averisadmin',))
         if cursor.fetchone():
@@ -189,7 +194,17 @@ def get_data():
     if 'user_id' not in session: return jsonify({'error': 'Yetkisiz'}), 401
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute('''SELECT c.id, c.chapter_number, c.source_link, c.status, c.assigned_to, s.title as series_title, s.cover_filename, u.username as assignee_name FROM chapters c JOIN series s ON c.series_id = s.id LEFT JOIN users u ON c.assigned_to = u.id''')
+    cursor.execute('''
+        SELECT c.*, s.title as series_title, s.cover_filename, 
+        u1.username as assignee_name, 
+        u2.username as cleaner_name, 
+        u3.username as proofreader_name 
+        FROM chapters c 
+        JOIN series s ON c.series_id = s.id 
+        LEFT JOIN users u1 ON c.assigned_to = u1.id 
+        LEFT JOIN users u2 ON c.cleaner_id = u2.id 
+        LEFT JOIN users u3 ON c.proofreader_id = u3.id
+    ''')
     chapters = [dict(row) for row in cursor.fetchall()]
     for ch in chapters:
         cursor.execute('''SELECT f.id, f.stage, f.filename, f.uploaded_at, u.username as uploader_name FROM files f LEFT JOIN users u ON f.uploader_id = u.id WHERE f.chapter_id = ?''', (ch['id'],))
@@ -223,6 +238,8 @@ def delete_user(user_id):
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute('UPDATE chapters SET assigned_to = NULL WHERE assigned_to = ?', (user_id,))
+    cursor.execute('UPDATE chapters SET cleaner_id = NULL WHERE cleaner_id = ?', (user_id,))
+    cursor.execute('UPDATE chapters SET proofreader_id = NULL WHERE proofreader_id = ?', (user_id,))
     cursor.execute('DELETE FROM users WHERE id = ?', (user_id,))
     conn.commit()
     conn.close()
@@ -266,152 +283,238 @@ def add_chapter():
     conn.close()
     return jsonify({'success': True})
 
-@app.route('/api/chapters/claim/<int:chapter_id>', methods=['POST'])
-def claim_chapter(chapter_id):
+@app.route('/api/chapters/claim/<int:chapter_id>/<task_type>', methods=['POST'])
+def claim_chapter(chapter_id, task_type):
     user_id = session.get('user_id')
     user_roles = session.get('roles', '').split(',')
+    
+    ROLE_MAP_TASK = {'TRANSLATION': 'Translator', 'CLEANING': 'Cleaner', 'PROOFREADING': 'Proofreader', 'TYPESETTING': 'Typesetter', 'PUBLISHING': 'Controller'}
+    req_role = ROLE_MAP_TASK.get(task_type, 'Controller')
+
+    if 'Controller' not in user_roles and req_role not in user_roles:
+        return jsonify({'error': 'Yetkisiz departman'}), 403
+
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute('SELECT status, assigned_to FROM chapters WHERE id = ?', (chapter_id,))
+    cursor.execute('SELECT * FROM chapters WHERE id = ?', (chapter_id,))
     chapter = cursor.fetchone()
-    if not chapter or chapter['assigned_to'] is not None: return jsonify({'error': 'Bölüm bulunamadı veya alınmış'}), 400
-    req_role = ROLE_MAP.get(chapter['status'])
-    if 'Controller' not in user_roles and req_role not in user_roles: return jsonify({'error': 'Yetkisiz departman'}), 403
-    cursor.execute('UPDATE chapters SET assigned_to = ? WHERE id = ?', (user_id, chapter_id))
+
+    if not chapter: return jsonify({'error': 'Bulunamadı'}), 400
+
+    if task_type == 'CLEANING':
+        if chapter['cleaner_id'] is not None: return jsonify({'error': 'Bu görev alınmış'}), 400
+        cursor.execute('UPDATE chapters SET cleaner_id = ? WHERE id = ?', (user_id, chapter_id))
+    elif task_type == 'PROOFREADING':
+        if chapter['proofreader_id'] is not None: return jsonify({'error': 'Bu görev alınmış'}), 400
+        cursor.execute('UPDATE chapters SET proofreader_id = ? WHERE id = ?', (user_id, chapter_id))
+    else:
+        if chapter['assigned_to'] is not None: return jsonify({'error': 'Bu görev alınmış'}), 400
+        cursor.execute('UPDATE chapters SET assigned_to = ? WHERE id = ?', (user_id, chapter_id))
+
     conn.commit()
     conn.close()
     return jsonify({'success': True})
 
-@app.route('/api/chapters/release/<int:chapter_id>', methods=['POST'])
-def release_chapter(chapter_id):
+@app.route('/api/chapters/release/<int:chapter_id>/<task_type>', methods=['POST'])
+def release_chapter(chapter_id, task_type):
     user_id = session.get('user_id')
     user_roles = session.get('roles', '').split(',')
+
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute('SELECT assigned_to FROM chapters WHERE id = ?', (chapter_id,))
+    cursor.execute('SELECT * FROM chapters WHERE id = ?', (chapter_id,))
     chapter = cursor.fetchone()
-    if not chapter or (chapter['assigned_to'] != user_id and 'Controller' not in user_roles): return jsonify({'error': 'Bunu bırakmaya yetkiniz yok'}), 403
-    cursor.execute('UPDATE chapters SET assigned_to = NULL WHERE id = ?', (chapter_id,))
+
+    if not chapter: return jsonify({'error': 'Bulunamadı'}), 400
+
+    if task_type == 'CLEANING':
+        if chapter['cleaner_id'] != user_id and 'Controller' not in user_roles: return jsonify({'error': 'Yetkisiz'}), 403
+        cursor.execute('UPDATE chapters SET cleaner_id = NULL WHERE id = ?', (chapter_id,))
+    elif task_type == 'PROOFREADING':
+        if chapter['proofreader_id'] != user_id and 'Controller' not in user_roles: return jsonify({'error': 'Yetkisiz'}), 403
+        cursor.execute('UPDATE chapters SET proofreader_id = NULL WHERE id = ?', (chapter_id,))
+    else:
+        if chapter['assigned_to'] != user_id and 'Controller' not in user_roles: return jsonify({'error': 'Yetkisiz'}), 403
+        cursor.execute('UPDATE chapters SET assigned_to = NULL WHERE id = ?', (chapter_id,))
+
     conn.commit()
     conn.close()
     return jsonify({'success': True})
 
-@app.route('/api/chapters/upload/<int:chapter_id>', methods=['POST'])
-def upload_files(chapter_id):
+@app.route('/api/chapters/upload/<int:chapter_id>/<task_type>', methods=['POST'])
+def upload_files(chapter_id, task_type):
     user_id = session.get('user_id')
     user_roles = session.get('roles', '').split(',')
     uploaded_files = request.files.getlist('files')
+
     if not uploaded_files or uploaded_files[0].filename == '': return jsonify({'error': 'Dosya seçilmedi'}), 400
+
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute('SELECT status, assigned_to FROM chapters WHERE id = ?', (chapter_id,))
+    cursor.execute('SELECT * FROM chapters WHERE id = ?', (chapter_id,))
     chapter = cursor.fetchone()
-    if not chapter or (chapter['assigned_to'] != int(user_id) and 'Controller' not in user_roles): return jsonify({'error': 'Yetkisiz yükleme'}), 403
-    stage = chapter['status']
+
+    if task_type == 'CLEANING': assignee = chapter['cleaner_id']
+    elif task_type == 'PROOFREADING': assignee = chapter['proofreader_id']
+    else: assignee = chapter['assigned_to']
+
+    if assignee != int(user_id) and 'Controller' not in user_roles:
+        return jsonify({'error': 'Yetkisiz yükleme'}), 403
+
+    stage = 'PENDING_' + task_type
     ch_dir = os.path.join(app.config['UPLOAD_FOLDER'], f'chapter_{chapter_id}', stage)
     os.makedirs(ch_dir, exist_ok=True)
+
     success_count = 0
     for file in uploaded_files:
         ext_ok = False
-        if stage == 'PENDING_TRANSLATION': ext_ok = allowed_file(file.filename, ALLOWED_EXTENSIONS_TXT)
-        elif stage in ['PENDING_CLEANING', 'PENDING_TYPESETTING', 'PENDING_PROOFREADING']: ext_ok = allowed_file(file.filename, ALLOWED_EXTENSIONS_IMG)
+        if task_type in ['TRANSLATION', 'PROOFREADING']: ext_ok = allowed_file(file.filename, ALLOWED_EXTENSIONS_TXT)
+        elif task_type in ['CLEANING', 'TYPESETTING']: ext_ok = allowed_file(file.filename, ALLOWED_EXTENSIONS_IMG)
         if 'Controller' in user_roles: ext_ok = True
+
         if ext_ok:
             filename = secure_filename(file.filename)
             filepath = os.path.join(ch_dir, filename)
             file.save(filepath)
             cursor.execute('INSERT INTO files (chapter_id, stage, uploader_id, filename, filepath) VALUES (?, ?, ?, ?, ?)', (chapter_id, stage, user_id, filename, filepath))
             success_count += 1
+            
     conn.commit()
     conn.close()
-    if success_count == 0: return jsonify({'error': 'Seçilen dosyaların formatı uyumsuz.'}), 400
+
+    if success_count == 0: return jsonify({'error': 'Seçilen dosyaların formatı bu departman için uyumsuz.'}), 400
     return jsonify({'success': True, 'count': success_count})
 
-@app.route('/api/chapters/submit/<int:chapter_id>', methods=['POST'])
-def submit_chapter(chapter_id):
+@app.route('/api/chapters/submit/<int:chapter_id>/<task_type>', methods=['POST'])
+def submit_chapter(chapter_id, task_type):
     user_roles = session.get('roles', '').split(',')
+    user_id = session.get('user_id')
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute('SELECT status, assigned_to FROM chapters WHERE id = ?', (chapter_id,))
+    cursor.execute('SELECT * FROM chapters WHERE id = ?', (chapter_id,))
     chapter = cursor.fetchone()
-    stage = chapter['status']
-    if 'Controller' not in user_roles and stage != 'PENDING_PROOFREADING':
-        cursor.execute('SELECT count(*) as c FROM files WHERE chapter_id = ? AND stage = ?', (chapter_id, stage))
-        if cursor.fetchone()['c'] == 0: return jsonify({'error': 'Dosya yüklemek zorunludur!'}), 400
-    credit_user = chapter['assigned_to'] if chapter['assigned_to'] else session['user_id']
-    if stage != 'PENDING_PUBLISHING':
-        cursor.execute('INSERT INTO task_history (user_id, stage) VALUES (?, ?)', (credit_user, stage))
-    next_idx = PIPELINE.index(stage) + 1
-    next_stage = PIPELINE[next_idx] if next_idx < len(PIPELINE) else 'PUBLISHED'
-    cursor.execute('UPDATE chapters SET status = ?, assigned_to = NULL WHERE id = ?', (next_stage, chapter_id))
+
+    folder_stage = 'PENDING_' + task_type
+
+    if 'Controller' not in user_roles and task_type != 'PUBLISHING':
+        cursor.execute('SELECT count(*) as c FROM files WHERE chapter_id = ? AND stage = ?', (chapter_id, folder_stage))
+        if cursor.fetchone()['c'] == 0:
+            return jsonify({'error': 'Bu aşamayı tamamlamak için dosya yüklemek zorunludur!'}), 400
+
+    if task_type == 'TRANSLATION': credit_user = chapter['assigned_to'] or user_id
+    elif task_type == 'CLEANING': credit_user = chapter['cleaner_id'] or user_id
+    elif task_type == 'PROOFREADING': credit_user = chapter['proofreader_id'] or user_id
+    else: credit_user = chapter['assigned_to'] or user_id
+
+    if task_type != 'PUBLISHING':
+        cursor.execute('INSERT INTO task_history (user_id, stage) VALUES (?, ?)', (credit_user, folder_stage))
+
+    if chapter['status'] == 'PENDING_TRANSLATION' and task_type == 'TRANSLATION':
+        cursor.execute('UPDATE chapters SET status = "PENDING_PARALLEL", assigned_to = NULL WHERE id = ?', (chapter_id,))
+    elif chapter['status'] == 'PENDING_PARALLEL':
+        if task_type == 'CLEANING':
+            cursor.execute('UPDATE chapters SET is_cleaned = 1 WHERE id = ?', (chapter_id,))
+        elif task_type == 'PROOFREADING':
+            cursor.execute('UPDATE chapters SET is_proofread = 1 WHERE id = ?', (chapter_id,))
+
+        cursor.execute('SELECT is_cleaned, is_proofread FROM chapters WHERE id = ?', (chapter_id,))
+        updated_ch = cursor.fetchone()
+        
+        if updated_ch['is_cleaned'] and updated_ch['is_proofread']:
+            cursor.execute('UPDATE chapters SET status = "PENDING_TYPESETTING", cleaner_id = NULL, proofreader_id = NULL WHERE id = ?', (chapter_id,))
+            
+    elif chapter['status'] == 'PENDING_TYPESETTING' and task_type == 'TYPESETTING':
+        cursor.execute('UPDATE chapters SET status = "PENDING_PUBLISHING", assigned_to = NULL WHERE id = ?', (chapter_id,))
+    elif chapter['status'] == 'PENDING_PUBLISHING' and task_type == 'PUBLISHING':
+        cursor.execute('UPDATE chapters SET status = "PUBLISHED", assigned_to = NULL WHERE id = ?', (chapter_id,))
+
     conn.commit()
     conn.close()
     return jsonify({'success': True})
 
+# === ZIP İNDİRME VE İSİMLENDİRME GÜNCELLENDİ ===
 @app.route('/api/chapters/download/<int:chapter_id>/<stage_filter>', methods=['GET'])
 def download_zip(chapter_id, stage_filter):
     conn = get_db()
     cursor = conn.cursor()
-    if stage_filter == 'ALL': cursor.execute('SELECT filename, filepath FROM files WHERE chapter_id = ?', (chapter_id,))
-    else: cursor.execute('SELECT filename, filepath FROM files WHERE chapter_id = ? AND stage = ?', (chapter_id, stage_filter))
+    
+    # İsimlendirme için seri başlığı ve bölüm numarasını çekiyoruz
+    cursor.execute('SELECT s.title, c.chapter_number FROM chapters c JOIN series s ON c.series_id = s.id WHERE c.id = ?', (chapter_id,))
+    ch_info = cursor.fetchone()
+    
+    if not ch_info:
+        conn.close()
+        return "Bölüm bulunamadı.", 404
+        
+    series_title = ch_info['title']
+    chapter_number = ch_info['chapter_number']
+
+    if stage_filter == 'ALL': 
+        cursor.execute('SELECT filename, filepath FROM files WHERE chapter_id = ?', (chapter_id,))
+    else: 
+        cursor.execute('SELECT filename, filepath FROM files WHERE chapter_id = ? AND stage = ?', (chapter_id, stage_filter))
+    
     files = cursor.fetchall()
     conn.close()
+    
     if not files: return "Dosya bulunamadı.", 404
+    
+    # Türkçe aşama isimleri çevirisi
+    stage_names = {
+        'PENDING_TRANSLATION': 'Çeviri_Bekliyor',
+        'PENDING_CLEANING': 'Temizlik_Bekliyor',
+        'PENDING_PROOFREADING': 'Redakte_Bekliyor',
+        'PENDING_TYPESETTING': 'Dizgi_Bekliyor',
+        'PENDING_PUBLISHING': 'Yayinlanma_Bekliyor',
+        'ALL': 'Tum_Gecmis'
+    }
+    stage_tr = stage_names.get(stage_filter, stage_filter)
+    
+    # Windows/Linux için geçersiz karakterleri temizle
+    safe_title = re.sub(r'[\\/*?:"<>|]', "", series_title)
+    
+    # İstenilen format: "Seri İsmi_Bölüm X_Aşama.zip"
+    zip_filename = f"{safe_title}_Bölüm_{chapter_number}_{stage_tr}.zip"
+
     memory_file = io.BytesIO()
     with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
         for f in files:
+            # SADECE ZIP DOSYASININ İSMİ DEĞİŞİR, İÇİNDEKİ DOSYALAR (f['filename']) ORİJİNAL KALIR
             if os.path.exists(f['filepath']): zf.write(f['filepath'], f['filename'])
     memory_file.seek(0)
-    return send_file(memory_file, mimetype='application/zip', as_attachment=True, download_name=f"bolum_{chapter_id}_{stage_filter}.zip")
-
-# --- YENİ EKLENEN SİLME İŞLEMLERİ (SADECE YÖNETİCİLER İÇİN) ---
+    
+    return send_file(memory_file, mimetype='application/zip', as_attachment=True, download_name=zip_filename)
 
 @app.route('/api/admin/series/<int:series_id>', methods=['DELETE'])
 def delete_series_api(series_id):
-    if 'Controller' not in session.get('roles', ''): 
-        return jsonify({'error': 'Yetkisiz erişim'}), 403
-    
+    if 'Controller' not in session.get('roles', ''): return jsonify({'error': 'Yetkisiz erişim'}), 403
     conn = get_db()
     cursor = conn.cursor()
-    
     cursor.execute('SELECT id FROM chapters WHERE series_id = ?', (series_id,))
     chapters = cursor.fetchall()
-    
     for ch in chapters:
-        chapter_id = ch['id']
-        folder_path = os.path.join(app.config['UPLOAD_FOLDER'], f'chapter_{chapter_id}')
-        try:
-            shutil.rmtree(folder_path)
-        except:
-            pass
-            
+        folder_path = os.path.join(app.config['UPLOAD_FOLDER'], f'chapter_{ch["id"]}')
+        try: shutil.rmtree(folder_path)
+        except: pass
     cursor.execute('DELETE FROM files WHERE chapter_id IN (SELECT id FROM chapters WHERE series_id = ?)', (series_id,))
     cursor.execute('DELETE FROM chapters WHERE series_id = ?', (series_id,))
     cursor.execute('DELETE FROM series WHERE id = ?', (series_id,))
     conn.commit()
     conn.close()
-    
     return jsonify({'success': True})
 
 @app.route('/api/admin/chapters/<int:chapter_id>', methods=['DELETE'])
 def delete_chapter_api(chapter_id):
-    if 'Controller' not in session.get('roles', ''): 
-        return jsonify({'error': 'Yetkisiz erişim'}), 403
-        
+    if 'Controller' not in session.get('roles', ''): return jsonify({'error': 'Yetkisiz erişim'}), 403
     conn = get_db()
     cursor = conn.cursor()
-    
     folder_path = os.path.join(app.config['UPLOAD_FOLDER'], f'chapter_{chapter_id}')
-    try:
-        shutil.rmtree(folder_path)
-    except:
-        pass
-        
+    try: shutil.rmtree(folder_path)
+    except: pass
     cursor.execute('DELETE FROM files WHERE chapter_id = ?', (chapter_id,))
     cursor.execute('DELETE FROM chapters WHERE id = ?', (chapter_id,))
     conn.commit()
     conn.close()
-    
     return jsonify({'success': True})
 
 if __name__ == '__main__':
