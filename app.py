@@ -4,7 +4,7 @@ import zipfile
 import io
 import time
 import shutil
-import re  # ZIP isimlerini düzenlerken geçersiz karakterleri temizlemek için eklendi
+import re  
 from datetime import datetime
 from flask import Flask, jsonify, request, render_template, send_file, session, send_from_directory
 from werkzeug.utils import secure_filename
@@ -432,13 +432,12 @@ def submit_chapter(chapter_id, task_type):
     conn.close()
     return jsonify({'success': True})
 
-# === ZIP İNDİRME VE İSİMLENDİRME GÜNCELLENDİ ===
+# === BURASI GÜNCELLENDİ (ZIP İSİMLENDİRME) ===
 @app.route('/api/chapters/download/<int:chapter_id>/<stage_filter>', methods=['GET'])
 def download_zip(chapter_id, stage_filter):
     conn = get_db()
     cursor = conn.cursor()
     
-    # İsimlendirme için seri başlığı ve bölüm numarasını çekiyoruz
     cursor.execute('SELECT s.title, c.chapter_number FROM chapters c JOIN series s ON c.series_id = s.id WHERE c.id = ?', (chapter_id,))
     ch_info = cursor.fetchone()
     
@@ -459,27 +458,25 @@ def download_zip(chapter_id, stage_filter):
     
     if not files: return "Dosya bulunamadı.", 404
     
-    # Türkçe aşama isimleri çevirisi
+    # Tam istediğin etiketler buraya eklendi
     stage_names = {
-        'PENDING_TRANSLATION': 'Çeviri_Bekliyor',
-        'PENDING_CLEANING': 'Temizlik_Bekliyor',
-        'PENDING_PROOFREADING': 'Redakte_Bekliyor',
-        'PENDING_TYPESETTING': 'Dizgi_Bekliyor',
-        'PENDING_PUBLISHING': 'Yayinlanma_Bekliyor',
-        'ALL': 'Tum_Gecmis'
+        'PENDING_TRANSLATION': 'Redakte Bekliyor',
+        'PENDING_CLEANING': 'Temiz Sayfalar Dizgi Bekliyor',
+        'PENDING_PROOFREADING': 'Redakte Edilmiş Dizgi Bekliyor',
+        'PENDING_TYPESETTING': 'Dizgili Sayfalar Yayınlanma Bekliyor',
+        'PENDING_PUBLISHING': 'Yayınlanma Bekliyor',
+        'ALL': 'Tüm Geçmiş'
     }
     stage_tr = stage_names.get(stage_filter, stage_filter)
     
-    # Windows/Linux için geçersiz karakterleri temizle
     safe_title = re.sub(r'[\\/*?:"<>|]', "", series_title)
     
-    # İstenilen format: "Seri İsmi_Bölüm X_Aşama.zip"
-    zip_filename = f"{safe_title}_Bölüm_{chapter_number}_{stage_tr}.zip"
+    # ZIP başlığı tam olarak örnekteki gibi birleştiriliyor
+    zip_filename = f"{safe_title}_Bölüm {chapter_number}_{stage_tr}.zip"
 
     memory_file = io.BytesIO()
     with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
         for f in files:
-            # SADECE ZIP DOSYASININ İSMİ DEĞİŞİR, İÇİNDEKİ DOSYALAR (f['filename']) ORİJİNAL KALIR
             if os.path.exists(f['filepath']): zf.write(f['filepath'], f['filename'])
     memory_file.seek(0)
     
