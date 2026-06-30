@@ -115,8 +115,11 @@
 
             <main class="flex-1 p-4 md:p-6 space-y-6 overflow-y-auto bg-slate-950 w-full pb-24 md:pb-6 relative">
                 
-                <div class="md:hidden flex justify-end mb-2 px-1">
-                    <button onclick="toggleMobileLayout()" id="mobile-layout-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-3 py-2 rounded-lg border border-slate-700 flex items-center gap-2 active:scale-95 transition-all shadow-md">
+                <div class="flex justify-end gap-2 mb-3 px-1 w-full border-b border-slate-800/50 pb-3">
+                    <button onclick="toggleHideAssigned()" id="hide-assigned-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-3 py-2 rounded-lg border border-slate-700 flex items-center gap-2 active:scale-95 transition-all shadow-md">
+                        🙈 Doluları Gizle
+                    </button>
+                    <button onclick="toggleMobileLayout()" id="mobile-layout-btn" class="md:hidden bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-3 py-2 rounded-lg border border-slate-700 flex items-center gap-2 active:scale-95 transition-all shadow-md">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                         Tekli Görünüm
                     </button>
@@ -193,7 +196,7 @@
                     <h3 class="text-sm font-bold text-amber-400 uppercase">2. Bölüm Yarat (Havuza At)</h3>
                     <select id="new-chapter-series" class="w-full bg-slate-900 text-sm rounded-lg p-3 text-white border border-slate-700"></select>
                     <input type="number" id="new-chapter-num" placeholder="Bölüm No" class="w-full bg-slate-900 text-sm rounded-lg p-3 text-white border border-slate-700">
-                    <input type="url" id="new-chapter-url" placeholder="Kaynak Linki (URL)" class="w-full bg-slate-900 text-sm rounded-lg p-3 text-white border border-slate-700">
+                    <input type="url" id="new-chapter-url" placeholder="Kaynak Linki (URL) - İsteğe Bağlı" class="w-full bg-slate-900 text-sm rounded-lg p-3 text-white border border-slate-700">
                     <button onclick="createChapter()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 rounded-lg active:scale-95 transition-transform">Havuza Gönder</button>
                 </div>
             </div>
@@ -227,8 +230,15 @@
         </div>
 
         <div id="view-stats" class="flex-1 bg-slate-950 p-4 md:p-8 overflow-y-auto hidden view-section w-full pb-24 md:pb-8">
-            <h2 class="text-xl md:text-2xl font-bold text-white mb-2">🏆 Ekip Emek Panosu</h2>
-            <p class="text-slate-400 mb-6 md:mb-8 text-sm">Takım arkadaşlarının yayınladığı bölüm sayıları.</p>
+            <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4 border-b border-slate-700 pb-4">
+                <div>
+                    <h2 class="text-xl md:text-2xl font-bold text-white mb-2">🏆 Ekip Emek Panosu</h2>
+                    <p class="text-slate-400 text-sm">Takım arkadaşlarının tamamladığı görev sayıları.</p>
+                </div>
+                <button id="stats-sort-btn" onclick="toggleStatsSort()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-lg active:scale-95 transition-all shadow-md flex items-center justify-center gap-2">
+                    📊 Sıralama: En Çok Yapan
+                </button>
+            </div>
             <div id="stats-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6"></div>
         </div>
     </div>
@@ -236,6 +246,11 @@
     <script>
         let me = null;
         let gData = { chapters: [], users: [], series: [] };
+        let gStats = [];
+        
+        let avatarCacheBuster = new Date().getTime(); 
+        let hideAssigned = localStorage.getItem('hideAssigned') === 'true';
+        let currentSort = 'total'; 
         
         const ROLE_MAP_TASK = { 'TRANSLATION': 'Translator', 'CLEANING': 'Cleaner', 'PROOFREADING': 'Proofreader', 'TYPESETTING': 'Typesetter', 'PUBLISHING': 'Controller' };
 
@@ -249,7 +264,16 @@
         };
 
         const DEFAULT_AVATAR = "/profiles/profil.png"; 
-        function getAvatarUrl(filename) { return filename ? `/profiles/${filename}` : DEFAULT_AVATAR; }
+
+        function getAvatarUrl(filename) { 
+            return (filename ? `/profiles/${filename}` : DEFAULT_AVATAR) + "?v=" + avatarCacheBuster; 
+        }
+
+        function toggleHideAssigned() {
+            hideAssigned = !hideAssigned;
+            localStorage.setItem('hideAssigned', hideAssigned);
+            renderUI();
+        }
 
         function toggleMobileLayout(forceValue = null) {
             const btn = document.getElementById('mobile-layout-btn');
@@ -388,7 +412,12 @@
             const file = document.getElementById('profile-file').files[0];
             if (file) fd.append('avatar', file);
             const { ok, data } = await safeFetch('/api/profile', { method: 'POST', body: fd });
-            if(ok && data.success) { alert('Profil güncellendi!'); document.getElementById('profile-file').value = ''; checkSession(); }
+            if(ok && data.success) { 
+                alert('Profil güncellendi!'); 
+                document.getElementById('profile-file').value = ''; 
+                avatarCacheBuster = new Date().getTime(); 
+                checkSession(); 
+            }
             else { alert(data.error); }
         }
 
@@ -396,38 +425,73 @@
             if(me.username === 'Averis') return; 
             if(!confirm("Profil resminizi kaldırmak istiyor musunuz?")) return;
             const { ok, data } = await safeFetch('/api/profile/avatar', { method: 'DELETE' });
-            if(ok && data.success) { alert('Resim kaldırıldı.'); checkSession(); }
+            if(ok && data.success) { 
+                alert('Resim kaldırıldı.'); 
+                avatarCacheBuster = new Date().getTime(); 
+                checkSession(); 
+            }
         }
 
         async function loadStats() {
-    const { ok, data } = await safeFetch('/api/stats');
-    if(!ok) return;
-    const grid = document.getElementById('stats-grid');
-    grid.innerHTML = '';
-    
-    data.forEach(user => {
-        const avatar = getAvatarUrl(user.profile_pic);
-        let tasksHtml = '';
-        // Detaylı liste görünümü
-        Object.keys(user.tasks).forEach(key => { 
-            tasksHtml += `<div class="stats-item flex justify-between text-sm py-2"><span class="font-bold">${STAGE_LABELS[key]}</span> <span class="text-white">${user.tasks[key]}</span></div>`; 
-        });
+            const { ok, data } = await safeFetch('/api/stats');
+            if(!ok) return;
+            gStats = data;
+            renderStats();
+        }
 
-        grid.innerHTML += `
-            <div class="bg-[#0f1525] border border-slate-800 rounded-xl p-6 flex flex-col items-center w-full shadow-lg">
-                <div class="w-20 h-20 rounded-full bg-slate-800 border-2 border-indigo-500/30 bg-cover bg-center mb-4" style="background-image: url('${avatar}')"></div>
-                <h3 class="text-white font-bold text-lg mb-4 truncate w-full text-center">${user.username}</h3>
-                <div class="w-full bg-[#161d2e] rounded-lg p-4">${tasksHtml}</div>
-            </div>`;
-    });
-}
+        function toggleStatsSort() {
+            currentSort = currentSort === 'total' ? 'alpha' : 'total';
+            renderStats();
+        }
+
+        function renderStats() {
+            const grid = document.getElementById('stats-grid');
+            grid.innerHTML = '';
+            
+            let sorted = [...gStats];
+            if (currentSort === 'total') {
+                sorted.sort((a, b) => {
+                    const totalA = Object.values(a.tasks).reduce((sum, val) => sum + val, 0);
+                    const totalB = Object.values(b.tasks).reduce((sum, val) => sum + val, 0);
+                    return totalB - totalA; 
+                });
+            } else {
+                sorted.sort((a, b) => a.username.localeCompare(b.username)); 
+            }
+
+            const sortBtn = document.getElementById('stats-sort-btn');
+            if(sortBtn) sortBtn.innerHTML = currentSort === 'total' ? '📊 Sıralama: En Çok Yapan' : '🔤 Sıralama: A-Z';
+
+            sorted.forEach(user => {
+                const avatar = getAvatarUrl(user.profile_pic);
+                
+                const t_ceviri = user.tasks['PENDING_TRANSLATION'] || 0;
+                const t_redakte = user.tasks['PENDING_PROOFREADING'] || 0;
+                const t_temizlik = user.tasks['PENDING_CLEANING'] || 0;
+                const t_dizgi = user.tasks['PENDING_TYPESETTING'] || 0;
+                const total = t_ceviri + t_redakte + t_temizlik + t_dizgi;
+
+                grid.innerHTML += `
+                    <div class="bg-[#0f1525] border border-slate-800 rounded-xl p-6 flex flex-col items-center w-full shadow-lg relative">
+                        <div class="w-20 h-20 rounded-full bg-slate-800 border-2 border-indigo-500/30 bg-cover bg-center mb-4 shadow-md" style="background-image: url('${avatar}')"></div>
+                        <h3 class="text-white font-bold text-lg mb-4 truncate w-full text-center">${user.username}</h3>
+                        
+                        <div class="w-full bg-[#161d2e] rounded-lg p-4 space-y-2">
+                            <div class="flex justify-between text-sm border-b border-slate-800 pb-2"><span class="font-bold text-amber-500">✏️ Çeviri</span> <span class="text-white">${t_ceviri}</span></div>
+                            <div class="flex justify-between text-sm border-b border-slate-800 pb-2 pt-1"><span class="font-bold text-blue-400">🔍 Redakte</span> <span class="text-white">${t_redakte}</span></div>
+                            <div class="flex justify-between text-sm border-b border-slate-800 pb-2 pt-1"><span class="font-bold text-teal-400">🧹 Temizlik</span> <span class="text-white">${t_temizlik}</span></div>
+                            <div class="flex justify-between text-sm border-b border-slate-800 pb-2 pt-1"><span class="font-bold text-indigo-400">🔤 Dizgi</span> <span class="text-white">${t_dizgi}</span></div>
+                            <div class="flex justify-between text-base pt-2 mt-2"><span class="font-extrabold text-emerald-400">🏆 Toplam</span> <span class="text-white font-black">${total}</span></div>
+                        </div>
+                    </div>`;
+            });
+        }
 
         async function loadData() {
             const { ok, data } = await safeFetch('/api/data');
             if(!ok) return;
             gData = data;
             
-            // HATA FİX: Dropdown doldururken önceki seçimi akılda tut ve Varsayılan "Seri Seç" ekle
             const seriesSelect = document.getElementById('new-chapter-series');
             const currentSelection = seriesSelect.value;
             let optionsHtml = '<option value="" disabled ' + (!currentSelection ? 'selected' : '') + '>-- Seri Seç --</option>';
@@ -481,6 +545,13 @@
             document.getElementById('lane-PENDING_TYPESETTING').classList.toggle('hidden', !(isCtrl || myRoles.includes('Typesetter')));
             document.getElementById('lane-PENDING_PUBLISHING').classList.toggle('hidden', !isCtrl);
 
+            const hideBtn = document.getElementById('hide-assigned-btn');
+            if (hideBtn) {
+                hideBtn.innerHTML = hideAssigned ? '👁️ Başkalarının İşlerini Göster' : '🙈 Başkalarının İşlerini Gizle';
+                if(hideAssigned) { hideBtn.classList.add('text-emerald-400'); hideBtn.classList.remove('text-slate-300'); }
+                else { hideBtn.classList.remove('text-emerald-400'); hideBtn.classList.add('text-slate-300'); }
+            }
+
             document.querySelectorAll('.lane-container').forEach(el => el.innerHTML = '');
             const sidebar = document.getElementById('my-tasks-container');
             sidebar.innerHTML = '';
@@ -509,6 +580,11 @@
 
                     if (currentAssigneeId === me.id || (task === 'PUBLISHING' && isCtrl)) {
                         sidebar.appendChild(createSidebarCard(ch, task, currentAssigneeId));
+                    }
+
+                    // DOLULARI GİZLE MANTIĞI FİX (Kendi işlerimizi gizlemez)
+                    if (hideAssigned && currentAssigneeId !== null && currentAssigneeId !== me.id) {
+                        return; 
                     }
 
                     const laneEl = document.querySelector(`#container-${stageFolder}`);
@@ -728,13 +804,12 @@
             const series_id = seriesSelect.value;
             const num = document.getElementById('new-chapter-num').value;
             const url = document.getElementById('new-chapter-url').value;
-            if(!series_id || !num || !url) return alert('Tüm alanları doldurun.');
+            if(!series_id || !num) return alert('Lütfen Seriyi seçin ve Bölüm numarasını girin.');
             const {ok, data} = await safeFetch('/api/admin/chapters', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ series_id: parseInt(series_id), chapter_number: parseInt(num), source_link: url }) });
             
             if(ok && data.success) { 
                 document.getElementById('new-chapter-num').value = ''; 
                 document.getElementById('new-chapter-url').value = ''; 
-                // HATA FİX: Dropdown temizlenmez, seçili seri aynı kalır. 
                 loadData(); 
                 alert('Bölüm havuza eklendi!'); 
             } else { alert(data.error); }
