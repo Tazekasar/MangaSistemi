@@ -24,6 +24,46 @@
         
         .fade-in { animation: fadeIn 0.2s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* MOBİL İKİLİ GÖRÜNÜM (DOUBLE COLUMN) CSS AYARLARI */
+        @media (max-width: 767px) {
+            body.mobile-double .lane-container {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 0.5rem;
+            }
+            body.mobile-double .kanban-lane { padding: 0.75rem; }
+            body.mobile-double .handdrawn-border { padding: 0.5rem; }
+            
+            /* Kartı yan yana değil alt alta (dikey) dizer */
+            body.mobile-double .lane-container .flex.gap-4.items-center {
+                flex-direction: column;
+                gap: 0.5rem;
+                text-align: center;
+            }
+            body.mobile-double .lane-container .flex.gap-4.items-center.pr-10 { padding-right: 0; }
+            
+            /* Resmi büyüt ve üste al */
+            body.mobile-double .lane-container .w-16.h-24 {
+                width: 100%;
+                height: 130px;
+                border-radius: 0.5rem;
+            }
+            
+            /* Yazı boyutlarını küçült */
+            body.mobile-double .lane-container h4 { font-size: 0.85rem; line-height: 1.1rem; }
+            body.mobile-double .lane-container p { font-size: 0.7rem; margin-bottom: 0.25rem; }
+            body.mobile-double .lane-container a { justify-content: center; }
+            
+            /* Durum etiketini küçült */
+            body.mobile-double .lane-container .text-\\[10px\\] { font-size: 0.55rem; padding: 0.15rem 0.25rem; }
+            
+            /* Butonları ufalt */
+            body.mobile-double .lane-container button, 
+            body.mobile-double .lane-container .text-\\[11px\\] {
+                font-size: 0.65rem;
+                padding: 0.4rem;
+            }
+        }
     </style>
 </head>
 <body class="h-[100dvh] flex flex-col overflow-hidden relative">
@@ -107,8 +147,15 @@
                 </div>
             </aside>
 
-            <main class="flex-1 p-4 md:p-6 space-y-6 overflow-y-auto bg-slate-950 w-full pb-24 md:pb-6">
+            <main class="flex-1 p-4 md:p-6 space-y-6 overflow-y-auto bg-slate-950 w-full pb-24 md:pb-6 relative">
                 
+                <div class="md:hidden flex justify-end mb-2 px-1">
+                    <button onclick="toggleMobileLayout()" id="mobile-layout-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-3 py-2 rounded-lg border border-slate-700 flex items-center gap-2 active:scale-95 transition-all shadow-md">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                        Tekli Görünüm
+                    </button>
+                </div>
+
                 <div id="lane-PENDING_TRANSLATION" class="kanban-lane bg-slate-900/40 p-4 md:p-5 rounded-xl border border-slate-800/80 hidden transition-all duration-300">
                     <div onclick="toggleLane('PENDING_TRANSLATION')" class="cursor-pointer flex items-center gap-3 mb-2 select-none group border-b border-slate-800/50 pb-3">
                         <div class="bg-slate-800 group-hover:bg-slate-700 p-1.5 rounded-lg transition-colors">
@@ -194,7 +241,7 @@
             <div class="w-full max-w-md mx-auto bg-slate-900 border-2 border-slate-800 p-6 md:p-8 rounded-xl shadow-xl">
                 <h2 class="text-xl md:text-2xl font-bold text-white mb-6 border-b border-slate-700 pb-3">Profilimi Düzenle</h2>
                 <div class="flex flex-col items-center mb-8 text-center">
-                    <div id="profile-edit-avatar" class="w-28 h-28 md:w-32 md:h-32 rounded-full border-4 border-indigo-500/50 mb-5 bg-cover bg-center shadow-lg"></div>
+                    <div id="profile-edit-avatar" class="w-28 h-28 md:w-32 md:h-32 rounded-full border-4 border-indigo-500/50 mb-5 bg-cover bg-center shadow-lg bg-slate-800 flex items-center justify-center text-xs text-slate-500 overflow-hidden">YOK</div>
                     <div class="flex flex-col sm:flex-row gap-3 w-full justify-center">
                         <label class="cursor-pointer bg-indigo-600 hover:bg-indigo-500 text-white text-sm px-5 py-3 rounded-lg font-bold transition-colors w-full sm:w-auto text-center active:scale-95">
                             📷 Fotoğraf Seç
@@ -244,17 +291,26 @@
         const DEFAULT_AVATAR = "/static/profil.png";
         function getAvatarUrl(filename) { return filename ? `/profiles/${filename}` : DEFAULT_AVATAR; }
 
+        // MOBİL GÖRÜNÜM DEĞİŞTİRİCİ FONKSİYON
+        function toggleMobileLayout(forceValue = null) {
+            const btn = document.getElementById('mobile-layout-btn');
+            
+            if (forceValue === 'double' || (!forceValue && !document.body.classList.contains('mobile-double'))) {
+                document.body.classList.add('mobile-double');
+                btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg> Tekli Görünüm`;
+                localStorage.setItem('mobileLayout', 'double');
+            } else {
+                document.body.classList.remove('mobile-double');
+                btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg> İkili Görünüm`;
+                localStorage.setItem('mobileLayout', 'single');
+            }
+        }
+
         function toggleLane(stage) {
             const container = document.getElementById(`container-${stage}`);
             const arrow = document.getElementById(`arrow-${stage}`);
-            
-            if (container.classList.contains('hidden')) {
-                container.classList.remove('hidden');
-                arrow.classList.remove('-rotate-90');
-            } else {
-                container.classList.add('hidden');
-                arrow.classList.add('-rotate-90');
-            }
+            if (container.classList.contains('hidden')) { container.classList.remove('hidden'); arrow.classList.remove('-rotate-90'); } 
+            else { container.classList.add('hidden'); arrow.classList.add('-rotate-90'); }
         }
 
         function toggleMobileSidebar() {
@@ -289,11 +345,15 @@
                 document.getElementById('main-view').classList.remove('hidden');
                 document.getElementById('header-user-info').innerText = `${me.username}`;
 
-                const avatarUrl = `url('${getAvatarUrl(me.profile_pic)}')`;
-                document.getElementById('header-avatar').style.backgroundImage = avatarUrl;
-                document.getElementById('profile-edit-avatar').style.backgroundImage = avatarUrl;
+                const avatarUrl = getAvatarUrl(me.profile_pic);
+                document.getElementById('header-avatar').style.backgroundImage = `url('${avatarUrl}')`;
+                document.getElementById('profile-edit-avatar').style.backgroundImage = `url('${avatarUrl}')`;
                 document.getElementById('profile-name').value = me.username;
                 document.getElementById('btn-delete-avatar').classList.toggle('hidden', !me.profile_pic);
+
+                // Kullanıcının kayıtlı görünüm ayarını uygula
+                if(localStorage.getItem('mobileLayout') === 'double') toggleMobileLayout('double');
+                else toggleMobileLayout('single');
 
                 loadData();
             } else {
@@ -307,11 +367,8 @@
             const p = document.getElementById('login-password').value;
             if(!u || !p) { alert("Lütfen isim ve şifre girin!"); return; }
             const { ok, data } = await safeFetch('/api/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({username: u, password: p}) });
-            if(ok && data.success) {
-                document.getElementById('login-username').value = '';
-                document.getElementById('login-password').value = '';
-                checkSession();
-            } else { alert(data.error || "Giriş Başarısız"); }
+            if(ok && data.success) { document.getElementById('login-username').value = ''; document.getElementById('login-password').value = ''; checkSession(); } 
+            else { alert(data.error || "Giriş Başarısız"); }
         }
 
         async function logout() { await safeFetch('/api/logout', {method: 'POST'}); me = null; checkSession(); }
@@ -452,7 +509,6 @@
                             }
                         }
 
-                        // === DİNAMİK PARALEL DURUM ETİKETİ ===
                         let parallelBadge = '';
                         if (ch.status === 'PENDING_PARALLEL') {
                             if (task === 'PROOFREADING' && ch.is_cleaned) {
@@ -494,8 +550,6 @@
             const coverHtml = ch.cover_filename ? `<img src="/covers/${ch.cover_filename}" class="w-14 h-20 object-cover rounded-lg border border-slate-600 shrink-0">` : `<div class="w-14 h-20 bg-slate-900 rounded-lg border border-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-600 shrink-0">YOK</div>`;
             
             const stageFolder = 'PENDING_' + task;
-            
-            // === DİNAMİK PARALEL DURUM ETİKETİ (SOL SİDEBAR) ===
             let currentStageLabel = STAGE_LABELS[stageFolder] || stageFolder;
             if (ch.status === 'PENDING_PARALLEL') {
                 if (task === 'PROOFREADING' && ch.is_cleaned) {
@@ -604,8 +658,6 @@
                 const s_chapters = gData.chapters.filter(c => c.series_id === s.id);
                 let chHtml = '';
                 s_chapters.forEach(c => {
-                    
-                    // === DİNAMİK PARALEL DURUM ETİKETİ (YÖNETİCİ PANELİ) ===
                     let statusLabel = STAGE_LABELS[c.status] || c.status;
                     if (c.status === 'PENDING_PARALLEL') {
                         if (c.is_cleaned && !c.is_proofread) statusLabel = '<span class="text-teal-400">🧹 Temizlik Bitti</span> & <span class="text-blue-400">🔍 Redakte Bekliyor</span>';
