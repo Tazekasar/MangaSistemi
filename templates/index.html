@@ -14,7 +14,6 @@
         body { font-family: 'Urbanist', sans-serif; background-color: #0f172a; color: #e2e8f0; -webkit-tap-highlight-color: transparent; }
         .handdrawn-border { border: 2px solid #334155; box-shadow: 3px 3px 0px #1e293b; }
         
-        /* Mobil dostu yatay kaydırma çubuğu (eski sistemden kalan güvenli class'lar) */
         .lane-container { -webkit-overflow-scrolling: touch; padding-bottom: 12px; }
         .lane-container::-webkit-scrollbar { height: 4px; }
         .lane-container::-webkit-scrollbar-thumb { background-color: #475569; border-radius: 4px; }
@@ -23,7 +22,6 @@
         .stats-item { border-bottom: 1px solid rgba(51, 65, 85, 0.5); }
         .stats-item:last-child { border-bottom: none; }
         
-        /* Modallar için animasyon */
         .fade-in { animation: fadeIn 0.2s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
@@ -439,8 +437,6 @@
                     const laneEl = document.querySelector(`#container-${stageFolder}`);
                     if (laneEl) {
                         const card = document.createElement('div');
-                        
-                        // KARTIN GENİŞLİĞİ: Izgara yapısına uyum sağlayacak şekilde `w-full` yapıldı.
                         card.className = "handdrawn-border bg-slate-900 p-4 md:p-5 rounded-xl w-full flex flex-col gap-3 relative hover:bg-slate-800 transition-colors shadow-md";
 
                         let actionHtml = '';
@@ -456,6 +452,16 @@
                             }
                         }
 
+                        // === DİNAMİK PARALEL DURUM ETİKETİ ===
+                        let parallelBadge = '';
+                        if (ch.status === 'PENDING_PARALLEL') {
+                            if (task === 'PROOFREADING' && ch.is_cleaned) {
+                                parallelBadge = '<div class="text-[10px] font-bold text-teal-400 bg-teal-950/50 border border-teal-800 px-2 py-1 rounded mt-1 mb-2 inline-block shadow-sm">✅ Temizlik Bitti, Redakte Bekleniyor</div>';
+                            } else if (task === 'CLEANING' && ch.is_proofread) {
+                                parallelBadge = '<div class="text-[10px] font-bold text-blue-400 bg-blue-950/50 border border-blue-800 px-2 py-1 rounded mt-1 mb-2 inline-block shadow-sm">✅ Redakte Bitti, Temizlik Bekleniyor</div>';
+                            }
+                        }
+
                         let deleteBtnHtml = isCtrl ? `<button onclick="deleteChapterAPI(${ch.id})" title="Bölümü Sil" class="absolute top-3 right-3 text-rose-500 hover:text-white hover:bg-rose-600 bg-slate-800 p-2 rounded-lg border border-slate-700 transition-colors active:scale-95 shadow-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>` : '';
                         const srcLink = ch.source_link ? `<a href="${ch.source_link}" target="_blank" class="text-xs text-blue-400 hover:text-blue-300 underline truncate block mt-1 flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg> Kaynak</a>` : '';
                         const coverHtml = ch.cover_filename ? `<img src="/covers/${ch.cover_filename}" class="w-full h-full object-cover rounded border border-slate-700 shadow-sm">` : '<span class="text-slate-600 font-bold">YOK</span>';
@@ -466,7 +472,8 @@
                                 <div class="w-16 h-24 bg-slate-800 rounded flex items-center justify-center shrink-0 text-[10px] text-slate-500 overflow-hidden shadow-inner">${coverHtml}</div>
                                 <div class="flex-1 min-w-0">
                                     <h4 class="text-lg md:text-base font-bold text-white truncate">${ch.series_title}</h4>
-                                    <p class="text-sm font-semibold text-slate-400 mt-1 mb-2">Bölüm ${ch.chapter_number}</p>
+                                    <p class="text-sm font-semibold text-slate-400 mt-1 mb-1">Bölüm ${ch.chapter_number}</p>
+                                    ${parallelBadge}
                                     ${srcLink}
                                 </div>
                             </div>
@@ -487,7 +494,16 @@
             const coverHtml = ch.cover_filename ? `<img src="/covers/${ch.cover_filename}" class="w-14 h-20 object-cover rounded-lg border border-slate-600 shrink-0">` : `<div class="w-14 h-20 bg-slate-900 rounded-lg border border-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-600 shrink-0">YOK</div>`;
             
             const stageFolder = 'PENDING_' + task;
-            const currentStageLabel = STAGE_LABELS[stageFolder] || stageFolder;
+            
+            // === DİNAMİK PARALEL DURUM ETİKETİ (SOL SİDEBAR) ===
+            let currentStageLabel = STAGE_LABELS[stageFolder] || stageFolder;
+            if (ch.status === 'PENDING_PARALLEL') {
+                if (task === 'PROOFREADING' && ch.is_cleaned) {
+                    currentStageLabel = '<span class="text-teal-400">🧹 Temizlik Bitti</span>, <span class="text-blue-400">🔍 Redakte Bekleniyor</span>';
+                } else if (task === 'CLEANING' && ch.is_proofread) {
+                    currentStageLabel = '<span class="text-blue-400">🔍 Redakte Bitti</span>, <span class="text-teal-400">🧹 Temizlik Bekleniyor</span>';
+                }
+            }
 
             const myFiles = ch.files.filter(f => f.stage === stageFolder && f.uploader_name);
             const isCtrl = me.roles.split(',').includes('Controller');
@@ -588,7 +604,15 @@
                 const s_chapters = gData.chapters.filter(c => c.series_id === s.id);
                 let chHtml = '';
                 s_chapters.forEach(c => {
-                    const statusLabel = c.status === 'PENDING_PARALLEL' ? '<span class="text-teal-400">🧹 Temizlik</span> & <span class="text-blue-400">🔍 Redakte</span>' : (STAGE_LABELS[c.status] || c.status);
+                    
+                    // === DİNAMİK PARALEL DURUM ETİKETİ (YÖNETİCİ PANELİ) ===
+                    let statusLabel = STAGE_LABELS[c.status] || c.status;
+                    if (c.status === 'PENDING_PARALLEL') {
+                        if (c.is_cleaned && !c.is_proofread) statusLabel = '<span class="text-teal-400">🧹 Temizlik Bitti</span> & <span class="text-blue-400">🔍 Redakte Bekliyor</span>';
+                        else if (c.is_proofread && !c.is_cleaned) statusLabel = '<span class="text-blue-400">🔍 Redakte Bitti</span> & <span class="text-teal-400">🧹 Temizlik Bekliyor</span>';
+                        else statusLabel = '<span class="text-teal-400">🧹 Temizlik</span> & <span class="text-blue-400">🔍 Redakte</span>';
+                    }
+
                     chHtml += `
                         <div class="flex justify-between items-center bg-slate-950 p-3 rounded-lg border border-slate-800 mt-3 ml-2 md:ml-6">
                             <span class="text-sm text-slate-300 font-semibold flex-1">Bölüm ${c.chapter_number} <span class="text-xs text-slate-500 ml-2 block sm:inline mt-1 sm:mt-0 font-normal">(Durum: <span class="font-bold">${statusLabel}</span>)</span></span>
