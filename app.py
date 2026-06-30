@@ -69,7 +69,7 @@ def init_db():
         series_id INTEGER NOT NULL,
         chapter_number INTEGER NOT NULL,
         source_link TEXT,
-        status TEXT DEFAULT 'PENDING_TRANSLATION',
+        status TEXT DEFAULT 'TRANS_CLEAN',
         cleaner_id INTEGER,
         proofreader_id INTEGER,
         assigned_to INTEGER,
@@ -91,7 +91,6 @@ def init_db():
         FOREIGN KEY (chapter_id) REFERENCES chapters(id),
         FOREIGN KEY (uploader_id) REFERENCES users(id)
     )''')
-    # YENİDEN EKLENDİ: Görev bitirme puan tablosu (Emek)
     db_execute('''CREATE TABLE IF NOT EXISTS task_history (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER,
@@ -189,8 +188,12 @@ def get_data():
     chapters_list = []
     for row in cur.fetchall():
         ch = dict(row)
-        if not ch['status']:
-            ch['status'] = 'PENDING_TRANSLATION'
+        
+        # ESKİ VERİLERİ YENİ SİSTEME UYARLAMA
+        if not ch['status'] or ch['status'] == 'PENDING_TRANSLATION':
+            ch['status'] = 'TRANS_CLEAN'
+        elif ch['status'] == 'PENDING_PARALLEL':
+            ch['status'] = 'PROOF_CLEAN'
             
         cur.execute('''
             SELECT chapter_files.*, uploader.username AS uploader_name
@@ -199,7 +202,6 @@ def get_data():
             WHERE chapter_id = ?
         ''', (ch['id'],))
         
-        # Dosya isimlerini temizleyerek gönderelim (Kullanıcı arayüzünde temiz görünsün)
         files = []
         for f_row in cur.fetchall():
             f_dict = dict(f_row)
@@ -271,7 +273,6 @@ def get_stats():
         u = dict(row)
         u['tasks'] = {'PENDING_TRANSLATION': 0, 'PENDING_CLEANING': 0, 'PENDING_PROOFREADING': 0, 'PENDING_TYPESETTING': 0}
         
-        # GERİ GETİRİLDİ: Emek tablosundan 'İlerlet' basılma sayısını sayar
         cur.execute('SELECT stage, count(*) FROM task_history WHERE user_id = ? GROUP BY stage', (u['id'],))
         for stage, count in cur.fetchall():
             if stage in u['tasks']: u['tasks'][stage] = count
@@ -376,20 +377,24 @@ def submit_chapter_stage(chapter_id, task):
         if file_check == 0:
             return jsonify({'error': 'Önce bu aşama için dosya yüklemelisiniz'}), 400
 
-    # GERİ GETİRİLDİ: Emek Puanını (Task History) Ver
+    # GÖREV TAMAMLANDI PUANI EKLENİYOR
     cur.execute('INSERT INTO task_history (user_id, stage) VALUES (?, ?)', (user['id'], stage))
 
     next_status = ''
     updates = {}
+    
+    # YENİ İŞ AKIŞI: PARALEL BAŞLANGIÇ
     if task == 'TRANSLATION':
-        next_status = 'PENDING_PARALLEL'
+        next_status = 'PROOF_CLEAN'
         updates = {'assigned_to': None}
     elif task == 'CLEANING':
         updates = {'is_cleaned': 1, 'cleaner_id': None}
-        if ch['is_proofread']: next_status = 'PENDING_TYPESETTING'
+        if ch['status'] == 'PROOF_CLEAN' and ch['is_proofread'] == 1:
+            next_status = 'PENDING_TYPESETTING'
     elif task == 'PROOFREADING':
         updates = {'is_proofread': 1, 'proofreader_id': None}
-        if ch['is_cleaned']: next_status = 'PENDING_TYPESETTING'
+        if ch['is_cleaned'] == 1:
+            next_status = 'PENDING_TYPESETTING'
     elif task == 'TYPESETTING':
         next_status = 'PENDING_PUBLISHING'
         updates = {'assigned_to': None}
@@ -403,8 +408,7 @@ def submit_chapter_stage(chapter_id, task):
              cur.execute('INSERT INTO chapter_files (chapter_id, stage, filename, uploader_id) VALUES (?, ?, ?, ?)', (chapter_id, 'PUBLISHED', last_file['filename'], user['id']))
 
     if next_status:
-        if ch['status'] == 'PENDING_PARALLEL' and next_status == 'PENDING_TYPESETTING':
-            pass 
+        pass 
     else: 
         next_status = ch['status']
 
@@ -416,7 +420,6 @@ def submit_chapter_stage(chapter_id, task):
     conn.close()
     return jsonify({'success': True})
 
-# FİX 100x HIZLI VE ORİJİNAL İSİMLİ ZIP İNDİRME ALTYAPISI
 @app.route('/api/chapters/download/<int:chapter_id>/<stage>')
 def download_chapter_files(chapter_id, stage):
     user = get_current_user()
@@ -443,13 +446,11 @@ def download_chapter_files(chapter_id, stage):
     conn.close()
 
     memory_file = io.BytesIO()
-    # FİX HIZ: ZIP_STORED sıfır sıkıştırma kullanır, işlem anında biter
     with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_STORED) as zipf:
         for row in files:
             filename = row['filename']
             filepath = os.path.join(app.config['CHAPTER_FOLDER'], filename)
             if os.path.exists(filepath):
-                # FİX İSİM: Orijinal dosya adını o çirkin koddan koparır
                 match = re.search(r'_[a-f0-9]{32}_(.*)$', filename)
                 archive_name = match.group(1) if match else filename
                 
@@ -460,21 +461,21 @@ def download_chapter_files(chapter_id, stage):
                 
     memory_file.seek(0)
     
-    # FİX BAŞLIK: İndirilen ZIP dosyası için Türkçe/Net İsimlendirme
     stage_tr_map = {
-        'PENDING_TRANSLATION': 'Çeviri',
-        'PENDING_CLEANING': 'Temizlik',
-        'PENDING_PROOFREADING': 'Redakte',
-        'PENDING_TYPESETTING': 'Dizgi',
-        'PUBLISHED': 'Yayınlanmış',
-        'ALL': 'Tüm Geçmiş'
+        'PENDING_TRANSLATION': 'Çeviri_Bekliyor',
+        'PENDING_CLEANING': 'Temiz_Sayfalar',
+        'PENDING_PROOFREADING': 'Redakte_Edilmis',
+        'PENDING_TYPESETTING': 'Dizgi_Tamamlanmis',
+        'PUBLISHED': 'Yayin_Kopyasi',
+        'ALL': 'Tum_Gecmis'
     }
     
     zip_title = f"Bolum_{chapter_id}_{stage}.zip"
     if ch_info:
         clean_title = "".join([c for c in ch_info['title'] if c.isalnum() or c in (' ', '_', '-')]).rstrip()
         zip_stage = stage_tr_map.get(stage, stage)
-        zip_title = f"{clean_title}_Bölüm {ch_info['chapter_number']}_{zip_stage}.zip"
+        # TAM İSTENEN FORMAT: SeriAdı_Bölüm 1_Aşama
+        zip_title = f"{clean_title}_Bolum {ch_info['chapter_number']}_{zip_stage}.zip"
 
     return send_file(
         memory_file,
@@ -593,7 +594,7 @@ def create_chapter_api():
     cur = conn.cursor()
     try:
         cur.execute('INSERT INTO chapters (series_id, chapter_number, source_link, status) VALUES (?, ?, ?, ?)', 
-                    (data['series_id'], data['chapter_number'], source_link, 'PENDING_TRANSLATION'))
+                    (data['series_id'], data['chapter_number'], source_link, 'TRANS_CLEAN'))
         conn.commit()
     except sqlite3.IntegrityError:
         return jsonify({'error': 'Bu seri için bu bölüm zaten havuza eklenmiş'}), 400
