@@ -189,7 +189,6 @@ def get_data():
     for row in cur.fetchall():
         ch = dict(row)
         
-        # ESKİ VERİLERİ YENİ SİSTEME UYARLAMA
         if not ch['status'] or ch['status'] == 'PENDING_TRANSLATION':
             ch['status'] = 'TRANS_CLEAN'
         elif ch['status'] == 'PENDING_PARALLEL':
@@ -377,13 +376,11 @@ def submit_chapter_stage(chapter_id, task):
         if file_check == 0:
             return jsonify({'error': 'Önce bu aşama için dosya yüklemelisiniz'}), 400
 
-    # GÖREV TAMAMLANDI PUANI EKLENİYOR
     cur.execute('INSERT INTO task_history (user_id, stage) VALUES (?, ?)', (user['id'], stage))
 
     next_status = ''
     updates = {}
     
-    # YENİ İŞ AKIŞI: PARALEL BAŞLANGIÇ
     if task == 'TRANSLATION':
         next_status = 'PROOF_CLEAN'
         updates = {'assigned_to': None}
@@ -474,7 +471,6 @@ def download_chapter_files(chapter_id, stage):
     if ch_info:
         clean_title = "".join([c for c in ch_info['title'] if c.isalnum() or c in (' ', '_', '-')]).rstrip()
         zip_stage = stage_tr_map.get(stage, stage)
-        # TAM İSTENEN FORMAT: SeriAdı_Bölüm 1_Aşama
         zip_title = f"{clean_title}_Bolum {ch_info['chapter_number']}_{zip_stage}.zip"
 
     return send_file(
@@ -586,10 +582,14 @@ def delete_series_api(series_id):
 @require_role('Controller')
 def create_chapter_api():
     data = request.json
-    if not data.get('series_id') or not data.get('chapter_number'): 
-        return jsonify({'error': 'Eksik bilgi: Seri ve Bölüm numarası zorunludur'}), 400
+    source_link = data.get('source_link', '').strip()
     
-    source_link = data.get('source_link', '') 
+    if not data.get('series_id') or not data.get('chapter_number'): 
+        return jsonify({'error': 'Eksik bilgi: Seri ve Bölüm numarası zorunludur.'}), 400
+        
+    if not source_link:
+        return jsonify({'error': 'Lütfen bölümün kaynak linkini ekleyin.'}), 400
+    
     conn = get_db_connection()
     cur = conn.cursor()
     try:
@@ -597,7 +597,7 @@ def create_chapter_api():
                     (data['series_id'], data['chapter_number'], source_link, 'TRANS_CLEAN'))
         conn.commit()
     except sqlite3.IntegrityError:
-        return jsonify({'error': 'Bu seri için bu bölüm zaten havuza eklenmiş'}), 400
+        return jsonify({'error': 'Bu bölüm zaten var.'}), 400
     finally:
         conn.close()
     return jsonify({'success': True})

@@ -170,7 +170,7 @@
                         <div class="bg-rose-900 group-hover:bg-rose-800 p-1.5 rounded-lg transition-colors">
                             <svg id="arrow-PENDING_PUBLISHING" class="w-5 h-5 text-rose-300 transform transition-transform duration-300 rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
                         </div>
-                        <h3 class="text-base font-bold text-rose-400 tracking-wider uppercase group-hover:text-rose-300 transition-colors">5. YAYINLANMA (KONTROL) BEKLEYEN</h3>
+                        <h3 class="text-base font-bold text-rose-400 tracking-wider uppercase group-hover:text-rose-300 transition-colors">5. YAYINLANMA BEKLEYEN</h3>
                     </div>
                     <div id="container-PENDING_PUBLISHING" class="lane-container grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 mt-4 transition-all duration-300"></div>
                 </div>
@@ -196,7 +196,7 @@
                     <h3 class="text-sm font-bold text-amber-400 uppercase">2. Bölüm Yarat (Havuza At)</h3>
                     <select id="new-chapter-series" class="w-full bg-slate-900 text-sm rounded-lg p-3 text-white border border-slate-700"></select>
                     <input type="number" id="new-chapter-num" placeholder="Bölüm No" class="w-full bg-slate-900 text-sm rounded-lg p-3 text-white border border-slate-700">
-                    <input type="url" id="new-chapter-url" placeholder="Kaynak Linki (URL) - İsteğe Bağlı" class="w-full bg-slate-900 text-sm rounded-lg p-3 text-white border border-slate-700">
+                    <input type="url" id="new-chapter-url" placeholder="Kaynak Linki (URL)" class="w-full bg-slate-900 text-sm rounded-lg p-3 text-white border border-slate-700">
                     <button onclick="createChapter()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 rounded-lg active:scale-95 transition-transform">Havuza Gönder</button>
                 </div>
             </div>
@@ -261,14 +261,6 @@
             'PENDING_TYPESETTING': '<span class="text-indigo-400">🔤 Dizgi</span>',
             'PENDING_PUBLISHING': '<span class="text-rose-400">👑 Yayın</span>',
             'PUBLISHED': '<span class="text-emerald-400">✅ Bitti</span>'
-        };
-
-        const STATUS_TR = {
-            'TRANS_CLEAN': '<span class="text-amber-500">Çeviri & Temizlik Bekliyor</span>',
-            'PROOF_CLEAN': '<span class="text-blue-400">Redakte Bekliyor</span>',
-            'PENDING_TYPESETTING': '<span class="text-indigo-400">Dizgi Bekliyor</span>',
-            'PENDING_PUBLISHING': '<span class="text-rose-400">Yayın Kontrolü Bekliyor</span>',
-            'PUBLISHED': '<span class="text-emerald-400">Yayınlandı</span>'
         };
 
         const DEFAULT_AVATAR = "/profiles/profil.png"; 
@@ -542,6 +534,23 @@
             });
         }
 
+        // FİX: DETAYLI VE RENKLİ STATE MACHINE (Durum Makinesi) GÖSTERİMİ
+        function getDetailedStatusHTML(ch) {
+            if (ch.status === 'TRANS_CLEAN') {
+                if (ch.is_cleaned) return '<span class="text-teal-400 font-bold">Temizlik Bitti, <span class="text-amber-400">Çeviri Bekliyor</span></span>';
+                return '<span class="text-amber-400 font-bold">Çeviri <span class="text-slate-400">&</span> <span class="text-teal-400">Temizlik Bekliyor</span></span>';
+            }
+            if (ch.status === 'PROOF_CLEAN') {
+                if (ch.is_cleaned && !ch.is_proofread) return '<span class="text-emerald-400 font-bold">Çeviri & Temizlik Bitti, <span class="text-blue-400">Redakte Bekliyor</span></span>';
+                if (!ch.is_cleaned && ch.is_proofread) return '<span class="text-blue-500 font-bold">Çeviri & Redakte Bitti, <span class="text-teal-400">Temizlik Bekliyor</span></span>';
+                return '<span class="text-amber-500 font-bold">Çeviri Bitti, <span class="text-blue-400">Redakte</span> <span class="text-slate-400">&</span> <span class="text-teal-400">Temizlik Bekliyor</span></span>';
+            }
+            if (ch.status === 'PENDING_TYPESETTING') return '<span class="text-purple-400 font-bold">Dizgi Bekliyor</span>';
+            if (ch.status === 'PENDING_PUBLISHING') return '<span class="text-rose-400 font-bold">Yayın Kontrolü Bekliyor</span>';
+            if (ch.status === 'PUBLISHED') return '<span class="text-emerald-500 font-black">Yayınlandı</span>';
+            return '<span class="text-slate-500">' + ch.status + '</span>';
+        }
+
         function renderUI() {
             const myRoles = me.roles.split(',');
             const isCtrl = myRoles.includes('Controller');
@@ -568,7 +577,6 @@
                 if (ch.status === 'PUBLISHED') return;
 
                 let activeTasks = [];
-                // PARALEL SİSTEM: Yeni bölüm eklendiğinde aynı anda Çeviri ve Temizlikte
                 if (ch.status === 'TRANS_CLEAN') {
                     activeTasks.push('TRANSLATION');
                     if (!ch.is_cleaned) activeTasks.push('CLEANING');
@@ -591,7 +599,7 @@
                     else if (task === 'PROOFREADING') { currentAssigneeId = ch.proofreader_id; currentAssigneeName = ch.proofreader_name; }
                     else { currentAssigneeId = ch.assigned_to; currentAssigneeName = ch.assignee_name; }
 
-                    // KONTROL ET FİX: Sidebar'a yalnızca GERÇEKTEN görev alınmışsa (is_assigned) eklensin
+                    // FİX: Sidebar'a SADECE Yöneticinin KENDİ ÜSTLENDİĞİ (Görevi Al dediği) işler düşecek
                     if (currentAssigneeId === me.id) {
                         sidebar.appendChild(createSidebarCard(ch, task, currentAssigneeId));
                     }
@@ -607,7 +615,6 @@
 
                         let actionHtml = '';
                         if (currentAssigneeId) {
-                            // KONTROL ET (Yayınlanma) butonu tıklandığında metinleri uyarlama
                             let textSizde = task === 'PUBLISHING' ? 'KONTROLDE SİZDE' : 'SİZDE';
                             let textAlindi = task === 'PUBLISHING' ? `KONTROLDE (${currentAssigneeName})` : `ALINDI (${currentAssigneeName})`;
                             
@@ -616,7 +623,6 @@
                                 : `<span class="text-[11px] font-bold text-slate-400 bg-slate-800 px-3 py-1.5 rounded-lg w-full text-center truncate border border-slate-700">${textAlindi}</span>`;
                         } else {
                             if (isCtrl || myRoles.includes(reqRole)) {
-                                // YAYIN İÇİN GÖREVİ AL YERİNE "KONTROL ET" YAZISI
                                 let btnText = task === 'PUBLISHING' ? 'KONTROL ET' : 'GÖREVİ AL';
                                 let btnColor = task === 'PUBLISHING' ? 'bg-rose-600 hover:bg-rose-500' : 'bg-indigo-600 hover:bg-indigo-500';
                                 actionHtml = `<button onclick="claimChapter(${ch.id}, '${task}')" class="text-xs font-bold text-white ${btnColor} py-2.5 rounded-lg w-full active:scale-95 transition-transform shadow-md">${btnText}</button>`;
@@ -725,7 +731,7 @@
                         <div class="text-xs font-bold mt-1 bg-slate-900 inline-block px-2 py-1 rounded border border-slate-700">${currentStageLabel}</div>
                     </div>
                 </div>
-                ${ch.source_link ? `<a href="${ch.source_link}" target="_blank" class="text-xs text-blue-400 hover:text-blue-300 underline mb-3 block flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg> Kaynak</a>` : ''}
+                ${ch.source_link ? `<a href="${ch.source_link}" target="_blank" class="text-xs text-blue-400 hover:text-blue-300 underline mb-3 block flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg> Kaynağa Git</a>` : ''}
                 ${downloadsHtml}
                 <div class="bg-slate-900 p-3 rounded-lg border border-slate-700 mt-2 shadow-inner">${filesHtml}</div>
                 ${actionBtn}
@@ -758,8 +764,8 @@
                 const s_chapters = gData.chapters.filter(c => c.series_id === s.id);
                 let chHtml = '';
                 s_chapters.forEach(c => {
-                    const statusLabel = STATUS_TR[c.status] || c.status;
-                    chHtml += `<div class="flex justify-between items-center bg-slate-950 p-3 rounded-lg border border-slate-800 mt-3 ml-2 md:ml-6"><span class="text-sm text-slate-300 font-semibold flex-1">Bölüm ${c.chapter_number} <span class="text-xs text-slate-500 ml-2 block sm:inline mt-1 sm:mt-0 font-normal">(Durum: ${statusLabel})</span></span><button onclick="deleteChapterAPI(${c.id})" class="text-xs bg-rose-700 hover:bg-rose-600 text-white px-4 py-2 rounded-lg font-bold transition-transform active:scale-95 shrink-0 shadow-sm border border-rose-900">Bölümü Sil</button></div>`;
+                    const statusHtml = getDetailedStatusHTML(c);
+                    chHtml += `<div class="flex justify-between items-center bg-slate-950 p-3 rounded-lg border border-slate-800 mt-3 ml-2 md:ml-6"><span class="text-sm text-slate-300 font-semibold flex-1">Bölüm ${c.chapter_number} <span class="text-xs text-slate-500 ml-2 block sm:inline mt-1 sm:mt-0 font-normal">(Durum: ${statusHtml})</span></span><button onclick="deleteChapterAPI(${c.id})" class="text-xs bg-rose-700 hover:bg-rose-600 text-white px-4 py-2 rounded-lg font-bold transition-transform active:scale-95 shrink-0 shadow-sm border border-rose-900">Bölümü Sil</button></div>`;
                 });
 
                 const seriesCoverHtml = s.cover_filename ? `<img src="/covers/${s.cover_filename}" class="w-12 h-16 object-cover rounded-lg border border-slate-600 shrink-0">` : `<div class="w-12 h-16 bg-slate-800 rounded-lg shrink-0 flex items-center justify-center text-[10px] font-bold text-slate-600 border border-slate-700">YOK</div>`;
@@ -825,8 +831,9 @@
             const seriesSelect = document.getElementById('new-chapter-series');
             const series_id = seriesSelect.value;
             const num = document.getElementById('new-chapter-num').value;
-            const url = document.getElementById('new-chapter-url').value;
+            const url = document.getElementById('new-chapter-url').value.trim();
             if(!series_id || !num) return alert('Lütfen Seriyi seçin ve Bölüm numarasını girin.');
+            if(!url) return alert('Lütfen bölümün kaynak linkini (URL) ekleyin.');
             const {ok, data} = await safeFetch('/api/admin/chapters', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ series_id: parseInt(series_id), chapter_number: parseInt(num), source_link: url }) });
             if(ok && data.success) { 
                 document.getElementById('new-chapter-num').value = ''; 
