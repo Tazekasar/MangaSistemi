@@ -553,31 +553,6 @@ def create_series_api():
         conn.close()
     return jsonify({'success': True})
 
-@app.route('/api/admin/series/<int:series_id>', methods=['DELETE'])
-@require_role('Controller')
-def delete_series_api(series_id):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    
-    series = cur.execute('SELECT cover_filename FROM series WHERE id = ?', (series_id,)).fetchone()
-    if series and series['cover_filename']:
-        try: os.remove(os.path.join(app.config['COVER_FOLDER'], series['cover_filename']))
-        except: pass
-        
-    chapters = cur.execute('SELECT id FROM chapters WHERE series_id = ?', (series_id,)).fetchall()
-    for ch in chapters:
-        files = cur.execute('SELECT filename FROM chapter_files WHERE chapter_id = ?', (ch['id'],)).fetchall()
-        for f in files:
-            try: os.remove(os.path.join(app.config['CHAPTER_FOLDER'], f['filename']))
-            except: pass
-        cur.execute('DELETE FROM chapter_files WHERE chapter_id = ?', (ch['id'],))
-        cur.execute('DELETE FROM chapters WHERE id = ?', (ch['id'],))
-        
-    cur.execute('DELETE FROM series WHERE id = ?', (series_id,))
-    conn.commit()
-    conn.close()
-    return jsonify({'success': True})
-
 @app.route('/api/admin/chapters', methods=['POST'])
 @require_role('Controller')
 def create_chapter_api():
@@ -592,6 +567,17 @@ def create_chapter_api():
     
     conn = get_db_connection()
     cur = conn.cursor()
+
+    # KOD SEVİYESİNDE MANUEL KONTROL (Kopya Bölüm Engeli)
+    existing_chapter = cur.execute(
+        'SELECT id FROM chapters WHERE series_id = ? AND chapter_number = ?',
+        (data['series_id'], data['chapter_number'])
+    ).fetchone()
+
+    if existing_chapter:
+        conn.close()
+        return jsonify({'error': 'Bu seriye ait bu bölüm zaten havuza eklenmiş!'}), 400
+
     try:
         cur.execute('INSERT INTO chapters (series_id, chapter_number, source_link, status) VALUES (?, ?, ?, ?)', 
                     (data['series_id'], data['chapter_number'], source_link, 'TRANS_CLEAN'))
