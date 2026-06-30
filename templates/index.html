@@ -78,7 +78,7 @@
             </div>
         </header>
 
-        <div id="mobile-nav" class="md:hidden flex justify-start gap-2 bg-slate-900 border-b border-slate-800 p-2 shrink-0 text-xs font-bold text-slate-400 overflow-x-auto safe-area-pb hide-scrollbar px-3"></div>
+        <div id="mobile-nav" class="md:hidden flex justify-start gap-1 bg-slate-900 border-b border-slate-800 p-2 shrink-0 text-xs font-bold text-slate-400 overflow-x-auto safe-area-pb hide-scrollbar px-3"></div>
 
         <div id="view-kanban" class="flex flex-1 overflow-hidden view-section relative">
             <div id="mobile-overlay" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-30 hidden md:hidden transition-opacity"></div>
@@ -233,13 +233,13 @@
             <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4 border-b border-slate-700 pb-4">
                 <div>
                     <h2 class="text-xl md:text-2xl font-bold text-white mb-2">🏆 Ekip Emek Panosu</h2>
-                    <p class="text-slate-400 text-sm">Takım arkadaşlarının tamamladığı görev sayıları.</p>
+                    <p class="text-slate-400 text-sm">Takım arkadaşlarının bitirdiği görev sayıları.</p>
                 </div>
                 <button id="stats-sort-btn" onclick="toggleStatsSort()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-lg active:scale-95 transition-all shadow-md flex items-center justify-center gap-2">
                     📊 Sıralama: En Çok Yapan
                 </button>
             </div>
-            <div id="stats-grid" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-6"></div>
+            <div id="stats-grid" class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-6"></div>
         </div>
     </div>
 
@@ -256,8 +256,8 @@
 
         const STAGE_LABELS = {
             'PENDING_TRANSLATION': '<span class="text-amber-500">✏️ Çeviri</span>',
-            'PENDING_CLEANING': '<span class="text-teal-400">🧹 Temiz</span>',
-            'PENDING_PROOFREADING': '<span class="text-blue-400">🔍 Redakt</span>',
+            'PENDING_CLEANING': '<span class="text-teal-400">🧹 Temizlik</span>',
+            'PENDING_PROOFREADING': '<span class="text-blue-400">🔍 Redakte</span>',
             'PENDING_TYPESETTING': '<span class="text-indigo-400">🔤 Dizgi</span>',
             'PENDING_PUBLISHING': '<span class="text-rose-400">👑 Yayın</span>',
             'PUBLISHED': '<span class="text-emerald-400">✅ Bitti</span>'
@@ -283,7 +283,7 @@
                 localStorage.setItem('mobileLayout', 'double');
             } else {
                 document.body.classList.remove('mobile-double');
-                btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg> İkili Görünüm`;
+                btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg> İkili Görünüm`;
                 localStorage.setItem('mobileLayout', 'single');
             }
         }
@@ -444,7 +444,6 @@
             renderStats();
         }
 
-        // FİX: MOBİLDE KÜÇÜLTÜLMÜŞ KOMPAKT KART TASARIMI
         function renderStats() {
             const grid = document.getElementById('stats-grid');
             grid.innerHTML = '';
@@ -472,6 +471,7 @@
                 const t_dizgi = user.tasks['PENDING_TYPESETTING'] || 0;
                 const total = t_ceviri + t_redakte + t_temizlik + t_dizgi;
 
+                // FİX: MOBİL İÇİN TAM KOMPAKT KART TASARIMI
                 grid.innerHTML += `
                     <div class="bg-[#0f1525] border border-slate-800 rounded-xl p-3 md:p-6 flex flex-col items-center w-full shadow-lg relative">
                         <div class="w-12 h-12 md:w-20 md:h-20 rounded-full bg-slate-800 border-2 border-indigo-500/30 bg-cover bg-center mb-2 md:mb-4 shadow-md" style="background-image: url('${avatar}')"></div>
@@ -479,8 +479,8 @@
                         
                         <div class="w-full bg-[#161d2e] rounded-lg p-2 md:p-4 space-y-1 md:space-y-2 text-xs md:text-sm">
                             <div class="flex justify-between border-b border-slate-800 pb-1 md:pb-2"><span class="font-bold text-amber-500">✏️ Çeviri</span> <span class="text-white">${t_ceviri}</span></div>
-                            <div class="flex justify-between border-b border-slate-800 pb-1 md:pb-2 pt-1"><span class="font-bold text-blue-400">🔍 Redakt</span> <span class="text-white">${t_redakte}</span></div>
-                            <div class="flex justify-between border-b border-slate-800 pb-1 md:pb-2 pt-1"><span class="font-bold text-teal-400">🧹 Temiz</span> <span class="text-white">${t_temizlik}</span></div>
+                            <div class="flex justify-between border-b border-slate-800 pb-1 md:pb-2 pt-1"><span class="font-bold text-blue-400">🔍 Redakte</span> <span class="text-white">${t_redakte}</span></div>
+                            <div class="flex justify-between border-b border-slate-800 pb-1 md:pb-2 pt-1"><span class="font-bold text-teal-400">🧹 Temizlik</span> <span class="text-white">${t_temizlik}</span></div>
                             <div class="flex justify-between border-b border-slate-800 pb-1 md:pb-2 pt-1"><span class="font-bold text-indigo-400">🔤 Dizgi</span> <span class="text-white">${t_dizgi}</span></div>
                             <div class="flex justify-between pt-1 md:pt-2 font-extrabold text-emerald-400"><span class="font-bold">🏆 Toplam</span> <span class="text-white font-black">${total}</span></div>
                         </div>
@@ -643,6 +643,7 @@
             
             const stageFolder = 'PENDING_' + task;
             let currentStageLabel = STAGE_LABELS[stageFolder] || stageFolder;
+            
             const myFiles = ch.files.filter(f => f.stage === stageFolder);
             const isCtrl = me.roles.split(',').includes('Controller');
             
@@ -661,13 +662,14 @@
                     else if(f.stage === 'PENDING_CLEANING') rName = 'Temizlikçi';
                     else if(f.stage === 'PENDING_TYPESETTING') rName = 'Dizgici';
                     else if(f.stage === 'PENDING_PROOFREADING') rName = 'Redaktör';
-                    filesHtml += `<div class="text-[10px] text-emerald-400 truncate mb-1">✓ ${rName}: ${f.filename}</div>`;
+                    // FİX: UZUN VE ÇİRKİN KOD YERİNE TEMİZLENMİŞ İSMİ GÖSTER
+                    filesHtml += `<div class="text-[10px] text-emerald-400 truncate mb-1">✓ ${rName}: ${f.clean_filename}</div>`;
                 });
                 if(ch.files.length === 0) filesHtml += `<div class="text-[10px] text-slate-500">Dosya yok.</div>`;
                 filesHtml += `</div>`;
             } else {
                 filesHtml = `<div id="${filesContainerId}">` + filesHtml;
-                myFiles.forEach(f => { filesHtml += `<div class="text-[10px] text-emerald-400 truncate mb-1">✓ ${f.filename}</div>`; });
+                myFiles.forEach(f => { filesHtml += `<div class="text-[10px] text-emerald-400 truncate mb-1">✓ ${f.clean_filename}</div>`; });
                 if(myFiles.length === 0) filesHtml += `<div class="text-[10px] text-rose-400 italic">Henüz dosya eklenmedi (Zorunlu)</div>`;
                 filesHtml += `</div>`;
             }

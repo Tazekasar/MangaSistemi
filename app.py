@@ -6,6 +6,7 @@ import os
 import uuid
 import zipfile
 import io
+import re
 
 app = Flask(__name__)
 app.secret_key = 'superseri_manga_key_123'
@@ -89,6 +90,13 @@ def init_db():
         upload_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (chapter_id) REFERENCES chapters(id),
         FOREIGN KEY (uploader_id) REFERENCES users(id)
+    )''')
+    # YENİDEN EKLENDİ: Görev bitirme puan tablosu (Emek)
+    db_execute('''CREATE TABLE IF NOT EXISTS task_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        stage TEXT,
+        completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )''')
     create_super_user()
 
@@ -190,7 +198,19 @@ def get_data():
             JOIN users AS uploader ON chapter_files.uploader_id = uploader.id
             WHERE chapter_id = ?
         ''', (ch['id'],))
-        ch['files'] = [dict(f_row) for f_row in cur.fetchall()]
+        
+        # Dosya isimlerini temizleyerek gönderelim (Kullanıcı arayüzünde temiz görünsün)
+        files = []
+        for f_row in cur.fetchall():
+            f_dict = dict(f_row)
+            match = re.search(r'_[a-f0-9]{32}_(.*)$', f_dict['filename'])
+            if match:
+                f_dict['clean_filename'] = match.group(1)
+            else:
+                f_dict['clean_filename'] = f_dict['filename']
+            files.append(f_dict)
+            
+        ch['files'] = files
         chapters_list.append(ch)
 
     conn.close()
@@ -250,7 +270,9 @@ def get_stats():
     for row in cur.fetchall():
         u = dict(row)
         u['tasks'] = {'PENDING_TRANSLATION': 0, 'PENDING_CLEANING': 0, 'PENDING_PROOFREADING': 0, 'PENDING_TYPESETTING': 0}
-        cur.execute('SELECT stage, count(*) FROM chapter_files WHERE uploader_id = ? GROUP BY stage', (u['id'],))
+        
+        # GERİ GETİRİLDİ: Emek tablosundan 'İlerlet' basılma sayısını sayar
+        cur.execute('SELECT stage, count(*) FROM task_history WHERE user_id = ? GROUP BY stage', (u['id'],))
         for stage, count in cur.fetchall():
             if stage in u['tasks']: u['tasks'][stage] = count
         users_list.append(u)
@@ -354,6 +376,9 @@ def submit_chapter_stage(chapter_id, task):
         if file_check == 0:
             return jsonify({'error': 'Önce bu aşama için dosya yüklemelisiniz'}), 400
 
+    # GERİ GETİRİLDİ: Emek Puanını (Task History) Ver
+    cur.execute('INSERT INTO task_history (user_id, stage) VALUES (?, ?)', (user['id'], stage))
+
     next_status = ''
     updates = {}
     if task == 'TRANSLATION':
@@ -391,7 +416,7 @@ def submit_chapter_stage(chapter_id, task):
     conn.close()
     return jsonify({'success': True})
 
-# FİX: GERÇEK VE GÜVENLİ ZIP İNDİRME ALTYAPISI
+# FİX 100x HIZLI VE ORİJİNAL İSİMLİ ZIP İNDİRME ALTYAPISI
 @app.route('/api/chapters/download/<int:chapter_id>/<stage>')
 def download_chapter_files(chapter_id, stage):
     user = get_current_user()
@@ -417,18 +442,17 @@ def download_chapter_files(chapter_id, stage):
     ''', (chapter_id,)).fetchone()
     conn.close()
 
-    # Bellek üzerinde geçici zip dosyası oluşturma
     memory_file = io.BytesIO()
-    with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
+    # FİX HIZ: ZIP_STORED sıfır sıkıştırma kullanır, işlem anında biter
+    with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_STORED) as zipf:
         for row in files:
             filename = row['filename']
             filepath = os.path.join(app.config['CHAPTER_FOLDER'], filename)
             if os.path.exists(filepath):
-                # Sistem UUID ön eklerini temizleyip orijinal isme indirgiyoruz
-                parts = filename.split('_', 3)
-                archive_name = parts[3] if len(parts) > 3 else filename
+                # FİX İSİM: Orijinal dosya adını o çirkin koddan koparır
+                match = re.search(r'_[a-f0-9]{32}_(.*)$', filename)
+                archive_name = match.group(1) if match else filename
                 
-                # Tüm geçmiş indirmelerinde karışıklığı önlemek için alt klasör yapısı
                 if stage == 'ALL':
                     archive_name = f"{row['stage']}/{archive_name}"
                     
@@ -436,11 +460,21 @@ def download_chapter_files(chapter_id, stage):
                 
     memory_file.seek(0)
     
-    # Dosya başlık ismini benzersiz ve anlaşılır yapma
+    # FİX BAŞLIK: İndirilen ZIP dosyası için Türkçe/Net İsimlendirme
+    stage_tr_map = {
+        'PENDING_TRANSLATION': 'Çeviri',
+        'PENDING_CLEANING': 'Temizlik',
+        'PENDING_PROOFREADING': 'Redakte',
+        'PENDING_TYPESETTING': 'Dizgi',
+        'PUBLISHED': 'Yayınlanmış',
+        'ALL': 'Tüm Geçmiş'
+    }
+    
     zip_title = f"Bolum_{chapter_id}_{stage}.zip"
     if ch_info:
         clean_title = "".join([c for c in ch_info['title'] if c.isalnum() or c in (' ', '_', '-')]).rstrip()
-        zip_title = f"{clean_title}_Bolum_{ch_info['chapter_number']}_{stage}.zip"
+        zip_stage = stage_tr_map.get(stage, stage)
+        zip_title = f"{clean_title}_Bölüm {ch_info['chapter_number']}_{zip_stage}.zip"
 
     return send_file(
         memory_file,
