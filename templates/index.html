@@ -78,7 +78,7 @@
             </div>
         </header>
 
-        <div id="mobile-nav" class="md:hidden flex justify-between bg-slate-900 border-b border-slate-800 p-1 shrink-0 text-xs font-bold text-slate-400 overflow-x-auto safe-area-pb hide-scrollbar"></div>
+        <div id="mobile-nav" class="md:hidden flex justify-start gap-2 bg-slate-900 border-b border-slate-800 p-2 shrink-0 text-xs font-bold text-slate-400 overflow-x-auto safe-area-pb hide-scrollbar px-3"></div>
 
         <div id="view-kanban" class="flex flex-1 overflow-hidden view-section relative">
             <div id="mobile-overlay" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-30 hidden md:hidden transition-opacity"></div>
@@ -239,7 +239,7 @@
                     📊 Sıralama: En Çok Yapan
                 </button>
             </div>
-            <div id="stats-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6"></div>
+            <div id="stats-grid" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-6"></div>
         </div>
     </div>
 
@@ -256,11 +256,11 @@
 
         const STAGE_LABELS = {
             'PENDING_TRANSLATION': '<span class="text-amber-500">✏️ Çeviri</span>',
-            'PENDING_CLEANING': '<span class="text-teal-400">🧹 Temizlik</span>',
-            'PENDING_PROOFREADING': '<span class="text-blue-400">🔍 Redakte</span>',
+            'PENDING_CLEANING': '<span class="text-teal-400">🧹 Temiz</span>',
+            'PENDING_PROOFREADING': '<span class="text-blue-400">🔍 Redakt</span>',
             'PENDING_TYPESETTING': '<span class="text-indigo-400">🔤 Dizgi</span>',
             'PENDING_PUBLISHING': '<span class="text-rose-400">👑 Yayın</span>',
-            'PUBLISHED': '<span class="text-emerald-400">✅ Yayınlandı</span>'
+            'PUBLISHED': '<span class="text-emerald-400">✅ Bitti</span>'
         };
 
         const DEFAULT_AVATAR = "/profiles/profil.png"; 
@@ -335,7 +335,7 @@
             menuItems.forEach((item, index) => {
                 const activeClass = (index === 0) ? 'active' : '';
                 dNav.innerHTML += `<button onclick="switchView('${item.id}')" id="nav-${item.id}" class="nav-btn ${activeClass} hover:text-indigo-300 pb-1">${item.label}</button>`;
-                mNav.innerHTML += `<button onclick="switchView('${item.id}')" id="nav-${item.id}-mobile" class="nav-btn ${activeClass} hover:text-indigo-300 px-3 py-2 shrink-0 rounded-lg whitespace-nowrap">${item.label}</button>`;
+                mNav.innerHTML += `<button onclick="switchView('${item.id}')" id="nav-${item.id}-mobile" class="nav-btn ${activeClass} hover:text-indigo-300 px-2.5 py-1.5 shrink-0 rounded-lg bg-slate-800/60 border border-slate-700/40 whitespace-nowrap">${item.label}</button>`;
             });
         }
 
@@ -444,6 +444,7 @@
             renderStats();
         }
 
+        // FİX: MOBİLDE KÜÇÜLTÜLMÜŞ KOMPAKT KART TASARIMI
         function renderStats() {
             const grid = document.getElementById('stats-grid');
             grid.innerHTML = '';
@@ -472,16 +473,16 @@
                 const total = t_ceviri + t_redakte + t_temizlik + t_dizgi;
 
                 grid.innerHTML += `
-                    <div class="bg-[#0f1525] border border-slate-800 rounded-xl p-6 flex flex-col items-center w-full shadow-lg relative">
-                        <div class="w-20 h-20 rounded-full bg-slate-800 border-2 border-indigo-500/30 bg-cover bg-center mb-4 shadow-md" style="background-image: url('${avatar}')"></div>
-                        <h3 class="text-white font-bold text-lg mb-4 truncate w-full text-center">${user.username}</h3>
+                    <div class="bg-[#0f1525] border border-slate-800 rounded-xl p-3 md:p-6 flex flex-col items-center w-full shadow-lg relative">
+                        <div class="w-12 h-12 md:w-20 md:h-20 rounded-full bg-slate-800 border-2 border-indigo-500/30 bg-cover bg-center mb-2 md:mb-4 shadow-md" style="background-image: url('${avatar}')"></div>
+                        <h3 class="text-white font-bold text-sm md:text-lg mb-2 md:mb-4 truncate w-full text-center">${user.username}</h3>
                         
-                        <div class="w-full bg-[#161d2e] rounded-lg p-4 space-y-2">
-                            <div class="flex justify-between text-sm border-b border-slate-800 pb-2"><span class="font-bold text-amber-500">✏️ Çeviri</span> <span class="text-white">${t_ceviri}</span></div>
-                            <div class="flex justify-between text-sm border-b border-slate-800 pb-2 pt-1"><span class="font-bold text-blue-400">🔍 Redakte</span> <span class="text-white">${t_redakte}</span></div>
-                            <div class="flex justify-between text-sm border-b border-slate-800 pb-2 pt-1"><span class="font-bold text-teal-400">🧹 Temizlik</span> <span class="text-white">${t_temizlik}</span></div>
-                            <div class="flex justify-between text-sm border-b border-slate-800 pb-2 pt-1"><span class="font-bold text-indigo-400">🔤 Dizgi</span> <span class="text-white">${t_dizgi}</span></div>
-                            <div class="flex justify-between text-base pt-2 mt-2"><span class="font-extrabold text-emerald-400">🏆 Toplam</span> <span class="text-white font-black">${total}</span></div>
+                        <div class="w-full bg-[#161d2e] rounded-lg p-2 md:p-4 space-y-1 md:space-y-2 text-xs md:text-sm">
+                            <div class="flex justify-between border-b border-slate-800 pb-1 md:pb-2"><span class="font-bold text-amber-500">✏️ Çeviri</span> <span class="text-white">${t_ceviri}</span></div>
+                            <div class="flex justify-between border-b border-slate-800 pb-1 md:pb-2 pt-1"><span class="font-bold text-blue-400">🔍 Redakt</span> <span class="text-white">${t_redakte}</span></div>
+                            <div class="flex justify-between border-b border-slate-800 pb-1 md:pb-2 pt-1"><span class="font-bold text-teal-400">🧹 Temiz</span> <span class="text-white">${t_temizlik}</span></div>
+                            <div class="flex justify-between border-b border-slate-800 pb-1 md:pb-2 pt-1"><span class="font-bold text-indigo-400">🔤 Dizgi</span> <span class="text-white">${t_dizgi}</span></div>
+                            <div class="flex justify-between pt-1 md:pt-2 font-extrabold text-emerald-400"><span class="font-bold">🏆 Toplam</span> <span class="text-white font-black">${total}</span></div>
                         </div>
                     </div>`;
             });
@@ -582,7 +583,6 @@
                         sidebar.appendChild(createSidebarCard(ch, task, currentAssigneeId));
                     }
 
-                    // DOLULARI GİZLE MANTIĞI FİX (Kendi işlerimizi gizlemez)
                     if (hideAssigned && currentAssigneeId !== null && currentAssigneeId !== me.id) {
                         return; 
                     }
@@ -643,7 +643,6 @@
             
             const stageFolder = 'PENDING_' + task;
             let currentStageLabel = STAGE_LABELS[stageFolder] || stageFolder;
-            
             const myFiles = ch.files.filter(f => f.stage === stageFolder);
             const isCtrl = me.roles.split(',').includes('Controller');
             
@@ -806,7 +805,6 @@
             const url = document.getElementById('new-chapter-url').value;
             if(!series_id || !num) return alert('Lütfen Seriyi seçin ve Bölüm numarasını girin.');
             const {ok, data} = await safeFetch('/api/admin/chapters', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ series_id: parseInt(series_id), chapter_number: parseInt(num), source_link: url }) });
-            
             if(ok && data.success) { 
                 document.getElementById('new-chapter-num').value = ''; 
                 document.getElementById('new-chapter-url').value = ''; 

@@ -1,9 +1,11 @@
 import sqlite3
-from flask import Flask, render_template, request, jsonify, session, send_from_directory
+from flask import Flask, render_template, request, jsonify, session, send_from_directory, send_file
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import os
 import uuid
+import zipfile
+import io
 
 app = Flask(__name__)
 app.secret_key = 'superseri_manga_key_123'
@@ -95,15 +97,13 @@ def create_super_user():
     if not super_user:
         hashed_password = generate_password_hash('181725')
         db_execute('INSERT INTO users (username, password, roles) VALUES (?, ?, ?)', ('Averis', hashed_password, 'Controller'))
-        print("Süper kullanıcı 'Averis' başarıyla oluşturuldu.")
 
 with app.app_context():
     init_db()
 
 def get_current_user():
     if 'user_id' not in session: return None
-    user = db_query('SELECT * FROM users WHERE id = ?', (session['user_id'],), one=True)
-    return user
+    return db_query('SELECT * FROM users WHERE id = ?', (session['user_id'],), one=True)
 
 def require_role(role):
     def decorator(f):
@@ -170,13 +170,8 @@ def get_data():
     series_list = [dict(row) for row in cur.fetchall()]
 
     cur.execute('''
-        SELECT 
-            chapters.*, 
-            series.title AS series_title, 
-            series.cover_filename AS cover_filename,
-            assignee.username AS assignee_name,
-            cleaner.username AS cleaner_name,
-            proofreader.username AS proofreader_name
+        SELECT chapters.*, series.title AS series_title, series.cover_filename AS cover_filename,
+               assignee.username AS assignee_name, cleaner.username AS cleaner_name, proofreader.username AS proofreader_name
         FROM chapters
         JOIN series ON chapters.series_id = series.id
         LEFT JOIN users AS assignee ON chapters.assigned_to = assignee.id
@@ -186,7 +181,6 @@ def get_data():
     chapters_list = []
     for row in cur.fetchall():
         ch = dict(row)
-        # NULL HATASI DÜZELTMESİ (Eski eklenmiş null olanları da onarır)
         if not ch['status']:
             ch['status'] = 'PENDING_TRANSLATION'
             
@@ -251,17 +245,14 @@ def delete_profile_avatar():
 def get_stats():
     conn = get_db_connection()
     cur = conn.cursor()
-    
     cur.execute('SELECT id, username, profile_pic FROM users WHERE LOWER(username) != ?', ('averis',))
     users_list = []
     for row in cur.fetchall():
         u = dict(row)
         u['tasks'] = {'PENDING_TRANSLATION': 0, 'PENDING_CLEANING': 0, 'PENDING_PROOFREADING': 0, 'PENDING_TYPESETTING': 0}
-        
         cur.execute('SELECT stage, count(*) FROM chapter_files WHERE uploader_id = ? GROUP BY stage', (u['id'],))
         for stage, count in cur.fetchall():
             if stage in u['tasks']: u['tasks'][stage] = count
-        
         users_list.append(u)
     conn.close()
     return jsonify(users_list)
@@ -272,7 +263,6 @@ def claim_chapter(chapter_id, task):
     if not user: return jsonify({'error': 'Unauthorized'}), 403
     my_roles = user['roles'].split(',')
     
-    # DÜZELTME: Eğer kullanıcı Kontrolcü (Controller) ise veya ilgili role sahipse görevi alabilir.
     if task not in ROLE_MAP_TASK or (ROLE_MAP_TASK[task] not in my_roles and 'Controller' not in my_roles):
         return jsonify({'error': 'Bu görev için yetkiniz yok'}), 403
 
@@ -387,14 +377,10 @@ def submit_chapter_stage(chapter_id, task):
         if last_file:
              cur.execute('INSERT INTO chapter_files (chapter_id, stage, filename, uploader_id) VALUES (?, ?, ?, ?)', (chapter_id, 'PUBLISHED', last_file['filename'], user['id']))
 
-    set_query = "status = ?"
     if next_status:
         if ch['status'] == 'PENDING_PARALLEL' and next_status == 'PENDING_TYPESETTING':
             pass 
-        elif next_status:
-             pass
     else: 
-        set_query = "status = status" 
         next_status = ch['status']
 
     update_str = ", ".join([f"{k} = NULL" if v is None else f"{k} = ?" for k, v in updates.items()])
@@ -405,6 +391,7 @@ def submit_chapter_stage(chapter_id, task):
     conn.close()
     return jsonify({'success': True})
 
+# FİX: GERÇEK VE GÜVENLİ ZIP İNDİRME ALTYAPISI
 @app.route('/api/chapters/download/<int:chapter_id>/<stage>')
 def download_chapter_files(chapter_id, stage):
     user = get_current_user()
@@ -413,21 +400,54 @@ def download_chapter_files(chapter_id, stage):
     conn = get_db_connection()
     cur = conn.cursor()
     
-    query = 'SELECT filename FROM chapter_files WHERE chapter_id = ?'
-    if stage != 'ALL': query += ' AND stage = ?'
-    else: query += ' AND stage != "PUBLISHED"' 
+    if stage == 'ALL':
+        files = cur.execute('SELECT filename, stage FROM chapter_files WHERE chapter_id = ? AND stage != "PUBLISHED"', (chapter_id,)).fetchall()
+    else:
+        files = cur.execute('SELECT filename, stage FROM chapter_files WHERE chapter_id = ? AND stage = ?', (chapter_id, stage)).fetchall()
     
-    args = (chapter_id,) if stage == 'ALL' else (chapter_id, stage)
-    files = cur.execute(query, args).fetchall()
+    if not files:
+        conn.close()
+        return jsonify({'error': 'İndirilecek herhangi bir dosya bulunamadı'}), 404
+
+    ch_info = cur.execute('''
+        SELECT series.title, chapters.chapter_number 
+        FROM chapters 
+        JOIN series ON chapters.series_id = series.id 
+        WHERE chapters.id = ?
+    ''', (chapter_id,)).fetchone()
     conn.close()
 
-    if not files: return jsonify({'error': 'Dosya bulunamadı'}), 404
+    # Bellek üzerinde geçici zip dosyası oluşturma
+    memory_file = io.BytesIO()
+    with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for row in files:
+            filename = row['filename']
+            filepath = os.path.join(app.config['CHAPTER_FOLDER'], filename)
+            if os.path.exists(filepath):
+                # Sistem UUID ön eklerini temizleyip orijinal isme indirgiyoruz
+                parts = filename.split('_', 3)
+                archive_name = parts[3] if len(parts) > 3 else filename
+                
+                # Tüm geçmiş indirmelerinde karışıklığı önlemek için alt klasör yapısı
+                if stage == 'ALL':
+                    archive_name = f"{row['stage']}/{archive_name}"
+                    
+                zipf.write(filepath, archive_name)
+                
+    memory_file.seek(0)
+    
+    # Dosya başlık ismini benzersiz ve anlaşılır yapma
+    zip_title = f"Bolum_{chapter_id}_{stage}.zip"
+    if ch_info:
+        clean_title = "".join([c for c in ch_info['title'] if c.isalnum() or c in (' ', '_', '-')]).rstrip()
+        zip_title = f"{clean_title}_Bolum_{ch_info['chapter_number']}_{stage}.zip"
 
-    if len(files) == 1:
-        return send_from_directory(app.config['CHAPTER_FOLDER'], files[0]['filename'])
-    else:
-        return jsonify({'error': 'Çoklu dosya indirme ZIP altyapısı bu sürümde yok'}), 501
-
+    return send_file(
+        memory_file,
+        mimetype='application/zip',
+        as_attachment=True,
+        download_name=zip_title
+    )
 
 @app.route('/api/admin/users', methods=['POST'])
 @require_role('Controller')
@@ -535,11 +555,9 @@ def create_chapter_api():
         return jsonify({'error': 'Eksik bilgi: Seri ve Bölüm numarası zorunludur'}), 400
     
     source_link = data.get('source_link', '') 
-    
     conn = get_db_connection()
     cur = conn.cursor()
     try:
-        # NULL HATASI KESİN ÇÖZÜMÜ: status değerini 'PENDING_TRANSLATION' olarak zorla işliyoruz
         cur.execute('INSERT INTO chapters (series_id, chapter_number, source_link, status) VALUES (?, ?, ?, ?)', 
                     (data['series_id'], data['chapter_number'], source_link, 'PENDING_TRANSLATION'))
         conn.commit()
@@ -554,14 +572,12 @@ def create_chapter_api():
 def delete_chapter_api(chapter_id):
     conn = get_db_connection()
     cur = conn.cursor()
-    
     files = cur.execute('SELECT filename FROM chapter_files WHERE chapter_id = ?', (chapter_id,)).fetchall()
     for f in files:
         try: os.remove(os.path.join(app.config['CHAPTER_FOLDER'], f['filename']))
         except: pass
     cur.execute('DELETE FROM chapter_files WHERE chapter_id = ?', (chapter_id,))
     cur.execute('DELETE FROM chapters WHERE id = ?', (chapter_id,))
-    
     conn.commit()
     conn.close()
     return jsonify({'success': True})
