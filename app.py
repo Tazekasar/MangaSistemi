@@ -169,14 +169,14 @@ def get_data():
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
-    # Kullanıcıları alırken süper kullanıcı Averis'i filtrele
-    # Kontrolcü bile olsa kimse Averis'i göremez.
-    cur.execute('SELECT id, username, roles, profile_pic FROM users WHERE username != ?', ('Averis',))
+    # Averis/averis hesabını tamamen filtrele (LOWER kullanarak küçük/büyük fark etmez)
+    cur.execute('SELECT id, username, roles, profile_pic FROM users WHERE LOWER(username) != ?', ('averis',))
     users_list = [dict(row) for row in cur.fetchall()]
 
     cur.execute('SELECT * FROM series')
     series_list = [dict(row) for row in cur.fetchall()]
 
+    # ... (kodun geri kalanı aynı)
     cur.execute('''
         SELECT 
             chapters.*, 
@@ -195,9 +195,7 @@ def get_data():
     for row in cur.fetchall():
         ch = dict(row)
         cur.execute('''
-            SELECT 
-                chapter_files.*,
-                uploader.username AS uploader_name
+            SELECT chapter_files.*, uploader.username AS uploader_name
             FROM chapter_files
             JOIN users AS uploader ON chapter_files.uploader_id = uploader.id
             WHERE chapter_id = ?
@@ -261,27 +259,20 @@ def get_stats():
     conn = get_db_connection()
     cur = conn.cursor()
     
-    # Averis istatistiklerde de görünmemeli
-    cur.execute('SELECT id, username, profile_pic FROM users WHERE username != ?', ('Averis',))
+    # Averis'i istatistiklerden de gizle
+    cur.execute('SELECT id, username, profile_pic FROM users WHERE LOWER(username) != ?', ('averis',))
     users_list = []
     for row in cur.fetchall():
         u = dict(row)
-        u['tasks'] = {}
-        # Sadece yayınlanan bölümleri say
-        cur.execute('''
-            SELECT 
-                uploader_id, COUNT(id) as count
-            FROM chapter_files
-            WHERE stage = ? AND uploader_id = ?
-            GROUP BY uploader_id
-        ''', ('PUBLISHED', u['id']))
-        pub_file = cur.fetchone()
-        u['tasks']['PUBLISHED'] = pub_file['count'] if pub_file else 0
-        users_list.append(u)
+        u['tasks'] = {'PENDING_TRANSLATION': 0, 'PENDING_CLEANING': 0, 'PENDING_PROOFREADING': 0, 'PENDING_TYPESETTING': 0}
         
+        # Her kullanıcının tamamladığı (file yüklediği) görevleri say
+        cur.execute('SELECT stage, count(*) FROM chapter_files WHERE uploader_id = ? GROUP BY stage', (u['id'],))
+        for stage, count in cur.fetchall():
+            if stage in u['tasks']: u['tasks'][stage] = count
+        
+        users_list.append(u)
     conn.close()
-    # Yayınlanma sayısına göre sırala (en çoktan en aza)
-    users_list.sort(key=lambda x: x['tasks']['PUBLISHED'], reverse=True)
     return jsonify(users_list)
 
 # --- Bölüm Görev API'leri ---

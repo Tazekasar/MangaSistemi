@@ -400,25 +400,27 @@
         }
 
         async function loadStats() {
-            const { ok, data } = await safeFetch('/api/stats');
-            if(!ok) return;
-            const grid = document.getElementById('stats-grid');
-            grid.innerHTML = '';
-            data.forEach(user => {
-                const avatar = getAvatarUrl(user.profile_pic);
-                const publishedCount = user.tasks['PUBLISHED'] || 0;
-                
-                grid.innerHTML += `
-                    <div class="bg-[#0f1525] border border-slate-800 rounded-xl p-6 flex flex-col items-center w-full shadow-lg">
-                        <div class="w-20 h-20 rounded-full bg-slate-800 border-2 border-indigo-500/30 bg-cover bg-center mb-4" style="background-image: url('${avatar}')"></div>
-                        <h3 class="text-white font-bold text-lg mb-4 truncate w-full text-center">${user.username}</h3>
-                        <div class="w-full bg-[#161d2e] rounded-lg p-4 stats-item flex justify-between text-sm py-2">
-                            <span class="font-bold text-emerald-400">✅ Yayınlanan:</span>
-                            <span class="text-white font-extrabold text-base">${publishedCount}</span>
-                        </div>
-                    </div>`;
-            });
-        }
+    const { ok, data } = await safeFetch('/api/stats');
+    if(!ok) return;
+    const grid = document.getElementById('stats-grid');
+    grid.innerHTML = '';
+    
+    data.forEach(user => {
+        const avatar = getAvatarUrl(user.profile_pic);
+        let tasksHtml = '';
+        // Detaylı liste görünümü
+        Object.keys(user.tasks).forEach(key => { 
+            tasksHtml += `<div class="stats-item flex justify-between text-sm py-2"><span class="font-bold">${STAGE_LABELS[key]}</span> <span class="text-white">${user.tasks[key]}</span></div>`; 
+        });
+
+        grid.innerHTML += `
+            <div class="bg-[#0f1525] border border-slate-800 rounded-xl p-6 flex flex-col items-center w-full shadow-lg">
+                <div class="w-20 h-20 rounded-full bg-slate-800 border-2 border-indigo-500/30 bg-cover bg-center mb-4" style="background-image: url('${avatar}')"></div>
+                <h3 class="text-white font-bold text-lg mb-4 truncate w-full text-center">${user.username}</h3>
+                <div class="w-full bg-[#161d2e] rounded-lg p-4">${tasksHtml}</div>
+            </div>`;
+    });
+}
 
         async function loadData() {
             const { ok, data } = await safeFetch('/api/data');
