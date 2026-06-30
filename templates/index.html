@@ -25,7 +25,6 @@
         .fade-in { animation: fadeIn 0.2s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* MOBİL İKİLİ GÖRÜNÜM (DOUBLE COLUMN) CSS AYARLARI */
         @media (max-width: 767px) {
             body.mobile-double .lane-container {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -33,36 +32,14 @@
             }
             body.mobile-double .kanban-lane { padding: 0.75rem; }
             body.mobile-double .handdrawn-border { padding: 0.5rem; }
-            
-            /* Kartı yan yana değil alt alta (dikey) dizer */
-            body.mobile-double .lane-container .flex.gap-4.items-center {
-                flex-direction: column;
-                gap: 0.5rem;
-                text-align: center;
-            }
+            body.mobile-double .lane-container .flex.gap-4.items-center { flex-direction: column; gap: 0.5rem; text-align: center; }
             body.mobile-double .lane-container .flex.gap-4.items-center.pr-10 { padding-right: 0; }
-            
-            /* Resmi büyüt ve üste al */
-            body.mobile-double .lane-container .w-16.h-24 {
-                width: 100%;
-                height: 130px;
-                border-radius: 0.5rem;
-            }
-            
-            /* Yazı boyutlarını küçült */
+            body.mobile-double .lane-container .w-16.h-24 { width: 100%; height: 130px; border-radius: 0.5rem; }
             body.mobile-double .lane-container h4 { font-size: 0.85rem; line-height: 1.1rem; }
             body.mobile-double .lane-container p { font-size: 0.7rem; margin-bottom: 0.25rem; }
             body.mobile-double .lane-container a { justify-content: center; }
-            
-            /* Durum etiketini küçült */
             body.mobile-double .lane-container .text-\\[10px\\] { font-size: 0.55rem; padding: 0.15rem 0.25rem; }
-            
-            /* Butonları ufalt */
-            body.mobile-double .lane-container button, 
-            body.mobile-double .lane-container .text-\\[11px\\] {
-                font-size: 0.65rem;
-                padding: 0.4rem;
-            }
+            body.mobile-double .lane-container button, body.mobile-double .lane-container .text-\\[11px\\] { font-size: 0.65rem; padding: 0.4rem; }
         }
     </style>
 </head>
@@ -86,13 +63,8 @@
                 <div class="flex items-center gap-2">
                     <h1 class="text-xl font-bold tracking-tight text-white">MangaFlow</h1>
                 </div>
-                <nav class="hidden md:flex gap-5 text-sm font-bold text-slate-400 mt-1">
-                    <button onclick="switchView('kanban')" id="nav-kanban" class="nav-btn active hover:text-indigo-300 pb-1">Ana Sistem</button>
-                    <button onclick="switchView('published')" id="nav-published" class="nav-btn hover:text-indigo-300 pb-1">Yayınlananlar</button>
-                    <button onclick="switchView('series')" id="nav-series" class="nav-btn hover:text-indigo-300 pb-1 hidden">Seriler</button>
-                    <button onclick="switchView('profile')" id="nav-profile" class="nav-btn hover:text-indigo-300 pb-1">Profilim</button>
-                    <button onclick="switchView('stats')" id="nav-stats" class="nav-btn hover:text-indigo-300 pb-1">Ekip Emek</button>
-                </nav>
+                
+                <nav id="desktop-nav" class="hidden md:flex gap-5 text-sm font-bold text-slate-400 mt-1"></nav>
             </div>
             <div class="flex items-center gap-3 md:gap-4">
                 <div class="flex items-center gap-2 text-right">
@@ -106,13 +78,7 @@
             </div>
         </header>
 
-        <div class="md:hidden flex justify-between bg-slate-900 border-b border-slate-800 p-1 shrink-0 text-xs font-bold text-slate-400 overflow-x-auto safe-area-pb hide-scrollbar">
-            <button onclick="switchView('kanban')" id="nav-kanban-mobile" class="nav-btn active hover:text-indigo-300 px-3 py-2 shrink-0 rounded-lg whitespace-nowrap">Sistem</button>
-            <button onclick="switchView('published')" id="nav-published-mobile" class="nav-btn hover:text-indigo-300 px-3 py-2 shrink-0 rounded-lg whitespace-nowrap">Yayınlananlar</button>
-            <button onclick="switchView('series')" id="nav-series-mobile" class="nav-btn hover:text-indigo-300 px-3 py-2 hidden shrink-0 rounded-lg whitespace-nowrap">Seriler</button>
-            <button onclick="switchView('profile')" id="nav-profile-mobile" class="nav-btn hover:text-indigo-300 px-3 py-2 shrink-0 rounded-lg whitespace-nowrap">Profil</button>
-            <button onclick="switchView('stats')" id="nav-stats-mobile" class="nav-btn hover:text-indigo-300 px-3 py-2 shrink-0 rounded-lg whitespace-nowrap">Emek</button>
-        </div>
+        <div id="mobile-nav" class="md:hidden flex justify-between bg-slate-900 border-b border-slate-800 p-1 shrink-0 text-xs font-bold text-slate-400 overflow-x-auto safe-area-pb hide-scrollbar"></div>
 
         <div id="view-kanban" class="flex flex-1 overflow-hidden view-section relative">
             <div id="mobile-overlay" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-30 hidden md:hidden transition-opacity"></div>
@@ -241,10 +207,9 @@
             <div class="w-full max-w-md mx-auto bg-slate-900 border-2 border-slate-800 p-6 md:p-8 rounded-xl shadow-xl">
                 <h2 class="text-xl md:text-2xl font-bold text-white mb-6 border-b border-slate-700 pb-3">Profilimi Düzenle</h2>
                 <div class="flex flex-col items-center mb-8 text-center">
-                    <div id="profile-edit-avatar" class="w-28 h-28 md:w-32 md:h-32 rounded-full border-4 border-indigo-500/50 mb-5 bg-cover bg-center shadow-lg bg-slate-800 flex items-center justify-center text-xs text-slate-500 overflow-hidden">YOK</div>
+                    <div id="profile-edit-avatar" class="w-28 h-28 md:w-32 md:h-32 rounded-full border-4 border-indigo-500/50 mb-5 bg-cover bg-center shadow-lg bg-slate-800 flex items-center justify-center text-xs text-slate-500 overflow-hidden"></div>
                     <div class="flex flex-col sm:flex-row gap-3 w-full justify-center">
-                        <label class="cursor-pointer bg-indigo-600 hover:bg-indigo-500 text-white text-sm px-5 py-3 rounded-lg font-bold transition-colors w-full sm:w-auto text-center active:scale-95">
-                            📷 Fotoğraf Seç
+                        <label id="lbl-select-photo" class="cursor-pointer bg-indigo-600 hover:bg-indigo-500 text-white text-sm px-5 py-3 rounded-lg font-bold transition-colors w-full sm:w-auto text-center active:scale-95">📷 Fotoğraf Seç
                             <input type="file" id="profile-file" accept=".png,.jpg,.jpeg,.webp" class="hidden" onchange="previewAvatar(event)">
                         </label>
                         <button id="btn-delete-avatar" onclick="deleteAvatar()" class="hidden bg-rose-700 hover:bg-rose-600 text-white text-sm px-5 py-3 rounded-lg font-bold transition-colors w-full sm:w-auto active:scale-95">🗑️ Resmi Sil</button>
@@ -254,15 +219,16 @@
                     <div>
                         <label class="block text-sm font-bold text-slate-400 mb-2">Görünür İsim (Kullanıcı Adı):</label>
                         <input type="text" id="profile-name" class="w-full bg-slate-800 text-white rounded-lg p-4 border border-slate-700 outline-none focus:border-indigo-500 text-base">
+                        <p id="averis-p-info" class="text-xs text-amber-300 mt-2 hidden italic">Süper yönetici ismi kalıcıdır.</p>
                     </div>
-                    <button onclick="saveProfile()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-lg transition-colors active:scale-95 text-lg shadow-md mt-4">Değişiklikleri Kaydet</button>
+                    <button id="profile-save-btn" onclick="saveProfile()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-lg transition-colors active:scale-95 text-lg shadow-md mt-4">Değişiklikleri Kaydet</button>
                 </div>
             </div>
         </div>
 
         <div id="view-stats" class="flex-1 bg-slate-950 p-4 md:p-8 overflow-y-auto hidden view-section w-full pb-24 md:pb-8">
             <h2 class="text-xl md:text-2xl font-bold text-white mb-2">🏆 Ekip Emek Panosu</h2>
-            <p class="text-slate-400 mb-6 md:mb-8 text-sm">Takım arkadaşlarının istatistikleri.</p>
+            <p class="text-slate-400 mb-6 md:mb-8 text-sm">Takım arkadaşlarının yayınladığı bölüm sayıları.</p>
             <div id="stats-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6"></div>
         </div>
     </div>
@@ -271,13 +237,7 @@
         let me = null;
         let gData = { chapters: [], users: [], series: [] };
         
-        const ROLE_MAP_TASK = {
-            'TRANSLATION': 'Translator',
-            'CLEANING': 'Cleaner',
-            'PROOFREADING': 'Proofreader',
-            'TYPESETTING': 'Typesetter',
-            'PUBLISHING': 'Controller'
-        };
+        const ROLE_MAP_TASK = { 'TRANSLATION': 'Translator', 'CLEANING': 'Cleaner', 'PROOFREADING': 'Proofreader', 'TYPESETTING': 'Typesetter', 'PUBLISHING': 'Controller' };
 
         const STAGE_LABELS = {
             'PENDING_TRANSLATION': '<span class="text-amber-500">✏️ Çeviri</span>',
@@ -288,13 +248,11 @@
             'PUBLISHED': '<span class="text-emerald-400">✅ Yayınlandı</span>'
         };
 
-        const DEFAULT_AVATAR = "/static/profil.png";
+        const DEFAULT_AVATAR = "/profiles/profil.png"; 
         function getAvatarUrl(filename) { return filename ? `/profiles/${filename}` : DEFAULT_AVATAR; }
 
-        // MOBİL GÖRÜNÜM DEĞİŞTİRİCİ FONKSİYON
         function toggleMobileLayout(forceValue = null) {
             const btn = document.getElementById('mobile-layout-btn');
-            
             if (forceValue === 'double' || (!forceValue && !document.body.classList.contains('mobile-double'))) {
                 document.body.classList.add('mobile-double');
                 btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg> Tekli Görünüm`;
@@ -327,6 +285,36 @@
             if(viewName === 'stats') loadStats();
         }
 
+        function renderNavigation(roles) {
+            const isCtrl = roles.includes('Controller');
+            const dNav = document.getElementById('desktop-nav');
+            const mNav = document.getElementById('mobile-nav');
+            dNav.innerHTML = ''; mNav.innerHTML = '';
+
+            let menuItems = [];
+            if (isCtrl) {
+                menuItems = [
+                    { id: 'kanban', label: 'Ana Sistem' },
+                    { id: 'series', label: 'Seriler' },
+                    { id: 'profile', label: 'Profilim' },
+                    { id: 'stats', label: 'Ekip Emek' },
+                    { id: 'published', label: 'Yayınlananlar' }
+                ];
+            } else {
+                menuItems = [
+                    { id: 'kanban', label: 'Ana Sistem' },
+                    { id: 'profile', label: 'Profilim' },
+                    { id: 'stats', label: 'Ekip Emek' }
+                ];
+            }
+
+            menuItems.forEach((item, index) => {
+                const activeClass = (index === 0) ? 'active' : '';
+                dNav.innerHTML += `<button onclick="switchView('${item.id}')" id="nav-${item.id}" class="nav-btn ${activeClass} hover:text-indigo-300 pb-1">${item.label}</button>`;
+                mNav.innerHTML += `<button onclick="switchView('${item.id}')" id="nav-${item.id}-mobile" class="nav-btn ${activeClass} hover:text-indigo-300 px-3 py-2 shrink-0 rounded-lg whitespace-nowrap">${item.label}</button>`;
+            });
+        }
+
         async function safeFetch(url, options = {}) {
             options.cache = "no-store";
             try {
@@ -345,13 +333,24 @@
                 document.getElementById('main-view').classList.remove('hidden');
                 document.getElementById('header-user-info').innerText = `${me.username}`;
 
+                renderNavigation(me.roles.split(','));
+
                 const avatarUrl = getAvatarUrl(me.profile_pic);
                 document.getElementById('header-avatar').style.backgroundImage = `url('${avatarUrl}')`;
-                document.getElementById('profile-edit-avatar').style.backgroundImage = `url('${avatarUrl}')`;
-                document.getElementById('profile-name').value = me.username;
-                document.getElementById('btn-delete-avatar').classList.toggle('hidden', !me.profile_pic);
+                
+                const profileEditAvatar = document.getElementById('profile-edit-avatar');
+                profileEditAvatar.innerHTML = ''; 
+                profileEditAvatar.style.backgroundImage = `url('${avatarUrl}')`;
 
-                // Kullanıcının kayıtlı görünüm ayarını uygula
+                document.getElementById('profile-name').value = me.username;
+
+                const isAveris = (me.username === 'Averis');
+                document.getElementById('profile-name').disabled = isAveris;
+                document.getElementById('averis-p-info').classList.toggle('hidden', !isAveris);
+                
+                document.getElementById('lbl-select-photo').classList.toggle('hidden', isAveris);
+                document.getElementById('btn-delete-avatar').classList.toggle('hidden', isAveris || !me.profile_pic);
+
                 if(localStorage.getItem('mobileLayout') === 'double') toggleMobileLayout('double');
                 else toggleMobileLayout('single');
 
@@ -375,10 +374,15 @@
 
         function previewAvatar(event) {
             const file = event.target.files[0];
-            if (file) document.getElementById('profile-edit-avatar').style.backgroundImage = `url(${URL.createObjectURL(file)})`;
+            if (file) {
+                const profileEditAvatar = document.getElementById('profile-edit-avatar');
+                profileEditAvatar.innerHTML = ''; 
+                profileEditAvatar.style.backgroundImage = `url(${URL.createObjectURL(file)})`;
+            }
         }
 
         async function saveProfile() {
+            if(me.username === 'Averis') return; 
             const fd = new FormData();
             fd.append('username', document.getElementById('profile-name').value);
             const file = document.getElementById('profile-file').files[0];
@@ -389,6 +393,7 @@
         }
 
         async function deleteAvatar() {
+            if(me.username === 'Averis') return; 
             if(!confirm("Profil resminizi kaldırmak istiyor musunuz?")) return;
             const { ok, data } = await safeFetch('/api/profile/avatar', { method: 'DELETE' });
             if(ok && data.success) { alert('Resim kaldırıldı.'); checkSession(); }
@@ -401,15 +406,16 @@
             grid.innerHTML = '';
             data.forEach(user => {
                 const avatar = getAvatarUrl(user.profile_pic);
-                const baseTasks = { 'PENDING_TRANSLATION': 0, 'PENDING_CLEANING': 0, 'PENDING_PROOFREADING': 0, 'PENDING_TYPESETTING': 0 };
-                if(user.tasks) Object.keys(user.tasks).forEach(k => { if (baseTasks[k] !== undefined) baseTasks[k] = user.tasks[k]; });
-                let tasksHtml = '';
-                Object.keys(baseTasks).forEach(key => { tasksHtml += `<div class="stats-item flex justify-between text-sm py-2"><span class="font-bold">${STAGE_LABELS[key]}</span> <span class="text-white">${baseTasks[key]}</span></div>`; });
+                const publishedCount = user.tasks['PUBLISHED'] || 0;
+                
                 grid.innerHTML += `
                     <div class="bg-[#0f1525] border border-slate-800 rounded-xl p-6 flex flex-col items-center w-full shadow-lg">
                         <div class="w-20 h-20 rounded-full bg-slate-800 border-2 border-indigo-500/30 bg-cover bg-center mb-4" style="background-image: url('${avatar}')"></div>
-                        <h3 class="text-white font-bold text-lg mb-4">${user.username}</h3>
-                        <div class="w-full bg-[#161d2e] rounded-lg p-4">${tasksHtml}</div>
+                        <h3 class="text-white font-bold text-lg mb-4 truncate w-full text-center">${user.username}</h3>
+                        <div class="w-full bg-[#161d2e] rounded-lg p-4 stats-item flex justify-between text-sm py-2">
+                            <span class="font-bold text-emerald-400">✅ Yayınlanan:</span>
+                            <span class="text-white font-extrabold text-base">${publishedCount}</span>
+                        </div>
                     </div>`;
             });
         }
@@ -418,8 +424,21 @@
             const { ok, data } = await safeFetch('/api/data');
             if(!ok) return;
             gData = data;
-            document.getElementById('new-chapter-series').innerHTML = gData.series.map(s => `<option value="${s.id}">${s.title}</option>`).join('');
-            if (me && me.roles.includes('Controller')) renderUserManagement();
+            
+            // HATA FİX: Dropdown doldururken önceki seçimi akılda tut ve Varsayılan "Seri Seç" ekle
+            const seriesSelect = document.getElementById('new-chapter-series');
+            const currentSelection = seriesSelect.value;
+            let optionsHtml = '<option value="" disabled ' + (!currentSelection ? 'selected' : '') + '>-- Seri Seç --</option>';
+            optionsHtml += gData.series.map(s => `<option value="${s.id}">${s.title}</option>`).join('');
+            seriesSelect.innerHTML = optionsHtml;
+            if (currentSelection && gData.series.find(s => s.id == currentSelection)) {
+                seriesSelect.value = currentSelection;
+            }
+
+            if (me && me.roles.includes('Controller')) {
+                renderUserManagement();
+                renderSeriesAdmin();
+            }
             renderUI();
         }
 
@@ -430,10 +449,12 @@
                 const avatarUrl = getAvatarUrl(u.profile_pic);
                 const userBox = document.createElement('div');
                 userBox.className = "bg-slate-900 border border-slate-700 p-3 rounded-lg text-sm text-white mb-2";
+                
                 const rolesHTML = ['Translator', 'Cleaner', 'Typesetter', 'Proofreader', 'Controller'].map(r => {
                     const checked = u.roles.includes(r) ? 'checked' : '';
                     return `<label class="mr-3 inline-block whitespace-nowrap mb-1"><input type="checkbox" onchange="updateUserRoles(${u.id})" class="role-edit-${u.id} accent-emerald-500" value="${r}" ${checked}> ${r}</label>`;
                 }).join('');
+
                 userBox.innerHTML = `
                     <div class="flex justify-between items-center mb-2 border-b border-slate-700 pb-2">
                         <div class="flex items-center gap-3">
@@ -457,9 +478,6 @@
             document.getElementById('lane-PENDING_PROOFREADING').classList.toggle('hidden', !(isCtrl || myRoles.includes('Proofreader')));
             document.getElementById('lane-PENDING_TYPESETTING').classList.toggle('hidden', !(isCtrl || myRoles.includes('Typesetter')));
             document.getElementById('lane-PENDING_PUBLISHING').classList.toggle('hidden', !isCtrl);
-
-            document.getElementById('nav-series').classList.toggle('hidden', !isCtrl);
-            if(document.getElementById('nav-series-mobile')) document.getElementById('nav-series-mobile').classList.toggle('hidden', !isCtrl);
 
             document.querySelectorAll('.lane-container').forEach(el => el.innerHTML = '');
             const sidebar = document.getElementById('my-tasks-container');
@@ -511,11 +529,8 @@
 
                         let parallelBadge = '';
                         if (ch.status === 'PENDING_PARALLEL') {
-                            if (task === 'PROOFREADING' && ch.is_cleaned) {
-                                parallelBadge = '<div class="text-[10px] font-bold text-teal-400 bg-teal-950/50 border border-teal-800 px-2 py-1 rounded mt-1 mb-2 inline-block shadow-sm">✅ Temizlik Bitti, Redakte Bekleniyor</div>';
-                            } else if (task === 'CLEANING' && ch.is_proofread) {
-                                parallelBadge = '<div class="text-[10px] font-bold text-blue-400 bg-blue-950/50 border border-blue-800 px-2 py-1 rounded mt-1 mb-2 inline-block shadow-sm">✅ Redakte Bitti, Temizlik Bekleniyor</div>';
-                            }
+                            if (task === 'PROOFREADING' && ch.is_cleaned) { parallelBadge = '<div class="text-[10px] font-bold text-teal-400 bg-teal-950/50 border border-teal-800 px-2 py-1 rounded mt-1 mb-2 inline-block shadow-sm">✅ Temizlik Bitti</div>'; } 
+                            else if (task === 'CLEANING' && ch.is_proofread) { parallelBadge = '<div class="text-[10px] font-bold text-blue-400 bg-blue-950/50 border border-blue-800 px-2 py-1 rounded mt-1 mb-2 inline-block shadow-sm">✅ Redakte Bitti</div>'; }
                         }
 
                         let deleteBtnHtml = isCtrl ? `<button onclick="deleteChapterAPI(${ch.id})" title="Bölümü Sil" class="absolute top-3 right-3 text-rose-500 hover:text-white hover:bg-rose-600 bg-slate-800 p-2 rounded-lg border border-slate-700 transition-colors active:scale-95 shadow-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>` : '';
@@ -541,7 +556,6 @@
             });
 
             renderPublished();
-            if(isCtrl) renderSeriesAdmin();
         }
 
         function createSidebarCard(ch, task, assigneeId) {
@@ -551,15 +565,8 @@
             
             const stageFolder = 'PENDING_' + task;
             let currentStageLabel = STAGE_LABELS[stageFolder] || stageFolder;
-            if (ch.status === 'PENDING_PARALLEL') {
-                if (task === 'PROOFREADING' && ch.is_cleaned) {
-                    currentStageLabel = '<span class="text-teal-400">🧹 Temizlik Bitti</span>, <span class="text-blue-400">🔍 Redakte Bekleniyor</span>';
-                } else if (task === 'CLEANING' && ch.is_proofread) {
-                    currentStageLabel = '<span class="text-blue-400">🔍 Redakte Bitti</span>, <span class="text-teal-400">🧹 Temizlik Bekleniyor</span>';
-                }
-            }
-
-            const myFiles = ch.files.filter(f => f.stage === stageFolder && f.uploader_name);
+            
+            const myFiles = ch.files.filter(f => f.stage === stageFolder);
             const isCtrl = me.roles.split(',').includes('Controller');
             
             const needsFile = (task !== 'PUBLISHING' && !isCtrl);
@@ -589,14 +596,11 @@
             }
 
             let downloadsHtml = '';
-            if (task === 'PROOFREADING') {
-                downloadsHtml += `<button onclick="window.open('/api/chapters/download/${ch.id}/PENDING_TRANSLATION')" class="text-[11px] font-bold bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-amber-300 w-full text-left mb-2 active:scale-95 transition-transform">📥 Çeviri .txt İndir</button>`;
-            } else if (task === 'TYPESETTING') {
+            if (task === 'PROOFREADING') downloadsHtml += `<button onclick="window.open('/api/chapters/download/${ch.id}/PENDING_TRANSLATION')" class="text-[11px] font-bold bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-amber-300 w-full text-left mb-2 active:scale-95 transition-transform">📥 Çeviri .txt İndir</button>`;
+            else if (task === 'TYPESETTING') {
                 downloadsHtml += `<button onclick="window.open('/api/chapters/download/${ch.id}/PENDING_PROOFREADING')" class="text-[11px] font-bold bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-blue-300 w-full text-left mb-2 active:scale-95 transition-transform">📥 Redakte Edilmiş Çeviri (.txt)</button>`;
                 downloadsHtml += `<button onclick="window.open('/api/chapters/download/${ch.id}/PENDING_CLEANING')" class="text-[11px] font-bold bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-teal-300 w-full text-left active:scale-95 transition-transform">📥 Temiz Görseller (ZIP)</button>`;
-            } else if (task === 'PUBLISHING') {
-                downloadsHtml += `<button onclick="window.open('/api/chapters/download/${ch.id}/ALL')" class="text-xs font-bold bg-rose-700 hover:bg-rose-600 px-3 py-3 rounded-lg text-white w-full text-center mb-3 shadow-lg active:scale-95 transition-transform border border-rose-500">📦 TÜM GEÇMİŞİ İNDİR (ZIP)</button>`;
-            }
+            } else if (task === 'PUBLISHING') downloadsHtml += `<button onclick="window.open('/api/chapters/download/${ch.id}/ALL')" class="text-xs font-bold bg-rose-700 hover:bg-rose-600 px-3 py-3 rounded-lg text-white w-full text-center mb-3 shadow-lg active:scale-95 transition-transform border border-rose-500">📦 TÜM GEÇMİŞİ İNDİR (ZIP)</button>`;
 
             let uploadAccept = '.png,.jpg,.jpeg,.webp';
             if(task === 'TRANSLATION' || task === 'PROOFREADING') uploadAccept = '.txt';
@@ -607,10 +611,7 @@
                     <label id="upload-label-${ch.id}-${task}" for="file-${ch.id}-${task}" class="cursor-pointer bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-3 py-2.5 rounded-lg font-bold flex-1 text-center truncate transition-transform active:scale-95 border border-slate-600">📎 Yükle</label>
                     <button id="submit-btn-${ch.id}-${task}" onclick="${needsFile && !hasFiles ? 'alert(\'Önce geçerli bir dosya yüklemelisiniz!\')' : `submitStage(${ch.id}, '${task}')`}" class="${submitDisabledClass} text-xs font-bold px-4 py-2.5 rounded-lg truncate transition-transform">İLERLET</button>
                 </div>`;
-
-            if (task === 'PUBLISHING') {
-                actionBtn = `<button onclick="submitStage(${ch.id}, '${task}')" class="bg-emerald-600 hover:bg-emerald-500 w-full text-white text-xs font-bold px-4 py-3 rounded-lg active:scale-95 transition-transform shadow-md border border-emerald-400">✅ YAYINLANDI İŞARETLE</button>`;
-            }
+            if (task === 'PUBLISHING') actionBtn = `<button onclick="submitStage(${ch.id}, '${task}')" class="bg-emerald-600 hover:bg-emerald-500 w-full text-white text-xs font-bold px-4 py-3 rounded-lg active:scale-95 transition-transform shadow-md border border-emerald-400">✅ YAYINLANDI İŞARETLE</button>`;
 
             const releaseBtn = task !== 'PUBLISHING' ? `<button onclick="releaseChapter(${ch.id}, '${task}')" class="text-[10px] font-bold text-rose-300 hover:text-white bg-rose-950 hover:bg-rose-700 px-3 py-1.5 rounded-lg border border-rose-800 transition-colors absolute top-4 right-4 active:scale-95 shadow-sm">❌ Bırak</button>` : '';
 
@@ -633,8 +634,7 @@
         }
 
         function renderPublished() {
-            const grid = document.getElementById('published-grid');
-            grid.innerHTML = '';
+            const grid = document.getElementById('published-grid'); grid.innerHTML = '';
             const pub = gData.chapters.filter(c => c.status === 'PUBLISHED');
             if(pub.length === 0) { grid.innerHTML = '<div class="text-slate-500 italic col-span-full p-4 text-center bg-slate-900 rounded-xl border border-slate-800">Henüz yayınlanmış bölüm yok.</div>'; return; }
             pub.forEach(ch => {
@@ -658,24 +658,17 @@
                 const s_chapters = gData.chapters.filter(c => c.series_id === s.id);
                 let chHtml = '';
                 s_chapters.forEach(c => {
-                    let statusLabel = STAGE_LABELS[c.status] || c.status;
-                    if (c.status === 'PENDING_PARALLEL') {
-                        if (c.is_cleaned && !c.is_proofread) statusLabel = '<span class="text-teal-400">🧹 Temizlik Bitti</span> & <span class="text-blue-400">🔍 Redakte Bekliyor</span>';
-                        else if (c.is_proofread && !c.is_cleaned) statusLabel = '<span class="text-blue-400">🔍 Redakte Bitti</span> & <span class="text-teal-400">🧹 Temizlik Bekliyor</span>';
-                        else statusLabel = '<span class="text-teal-400">🧹 Temizlik</span> & <span class="text-blue-400">🔍 Redakte</span>';
-                    }
-
-                    chHtml += `
-                        <div class="flex justify-between items-center bg-slate-950 p-3 rounded-lg border border-slate-800 mt-3 ml-2 md:ml-6">
-                            <span class="text-sm text-slate-300 font-semibold flex-1">Bölüm ${c.chapter_number} <span class="text-xs text-slate-500 ml-2 block sm:inline mt-1 sm:mt-0 font-normal">(Durum: <span class="font-bold">${statusLabel}</span>)</span></span>
-                            <button onclick="deleteChapterAPI(${c.id})" class="text-xs bg-rose-700 hover:bg-rose-600 text-white px-4 py-2 rounded-lg font-bold transition-transform active:scale-95 shrink-0 shadow-sm border border-rose-900">Bölümü Sil</button>
-                        </div>`;
+                    const statusLabel = STAGE_LABELS[c.status] || c.status;
+                    chHtml += `<div class="flex justify-between items-center bg-slate-950 p-3 rounded-lg border border-slate-800 mt-3 ml-2 md:ml-6"><span class="text-sm text-slate-300 font-semibold flex-1">Bölüm ${c.chapter_number} <span class="text-xs text-slate-500 ml-2 block sm:inline mt-1 sm:mt-0 font-normal">(Durum: ${statusLabel})</span></span><button onclick="deleteChapterAPI(${c.id})" class="text-xs bg-rose-700 hover:bg-rose-600 text-white px-4 py-2 rounded-lg font-bold transition-transform active:scale-95 shrink-0 shadow-sm border border-rose-900">Bölümü Sil</button></div>`;
                 });
+
+                const seriesCoverHtml = s.cover_filename ? `<img src="/covers/${s.cover_filename}" class="w-12 h-16 object-cover rounded-lg border border-slate-600 shrink-0">` : `<div class="w-12 h-16 bg-slate-800 rounded-lg shrink-0 flex items-center justify-center text-[10px] font-bold text-slate-600 border border-slate-700">YOK</div>`;
+
                 list.innerHTML += `
                     <div class="bg-slate-900 p-4 md:p-5 rounded-xl border border-slate-700 shadow-md">
                         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                             <div class="flex items-center gap-4">
-                                ${s.cover_filename ? `<img src="/covers/${s.cover_filename}" class="w-12 h-16 object-cover rounded-lg border border-slate-600 shrink-0">` : ''}
+                                ${seriesCoverHtml}
                                 <span class="font-bold text-white text-lg md:text-xl">${s.title}</span>
                             </div>
                             <button onclick="deleteSeriesAPI(${s.id})" class="text-sm bg-rose-800 hover:bg-rose-700 text-white px-4 py-2.5 rounded-lg font-bold transition-transform active:scale-95 shrink-0 shadow-sm border border-rose-900 sm:w-auto w-full">🗑️ Tüm Seriyi Sil</button>
@@ -687,105 +680,67 @@
             });
         }
 
-        async function claimChapter(id, task) {
-            const {ok, data} = await safeFetch(`/api/chapters/claim/${id}/${task}`, {method: 'POST'});
-            if(ok && data.success) loadData(); else alert(data.error);
-        }
-
-        async function releaseChapter(id, task) {
-            if(!confirm("Görevi bırakmak istediğinize emin misiniz?")) return;
-            const {ok, data} = await safeFetch(`/api/chapters/release/${id}/${task}`, {method: 'POST'});
-            if(ok && data.success) loadData(); else alert(data.error);
-        }
-
+        async function claimChapter(id, task) { const {ok, data} = await safeFetch(`/api/chapters/claim/${id}/${task}`, {method: 'POST'}); if(ok && data.success) loadData(); else alert(data.error); }
+        async function releaseChapter(id, task) { if(!confirm("Görevi bırakmak istediğinize emin misiniz?")) return; const {ok, data} = await safeFetch(`/api/chapters/release/${id}/${task}`, {method: 'POST'}); if(ok && data.success) loadData(); else alert(data.error); }
         async function uploadMultipleFiles(id, task) {
-            const fileInput = document.getElementById(`file-${id}-${task}`);
-            const files = fileInput.files;
-            if (files.length === 0) return;
-            const submitBtn = document.getElementById(`submit-btn-${id}-${task}`);
-            const uploadLabel = document.getElementById(`upload-label-${id}-${task}`);
-            const filesContainer = document.getElementById(`files-container-${id}-${task}`);
-
-            submitBtn.classList.add('opacity-50', 'pointer-events-none');
-            uploadLabel.classList.add('opacity-50', 'pointer-events-none');
-            uploadLabel.innerText = "⏳ Yükleniyor...";
-
+            const fileInput = document.getElementById(`file-${id}-${task}`); const files = fileInput.files; if (files.length === 0) return;
+            const submitBtn = document.getElementById(`submit-btn-${id}-${task}`); const uploadLabel = document.getElementById(`upload-label-${id}-${task}`); const filesContainer = document.getElementById(`files-container-${id}-${task}`);
+            submitBtn.classList.add('opacity-50', 'pointer-events-none'); uploadLabel.classList.add('opacity-50', 'pointer-events-none'); uploadLabel.innerText = "⏳ Yükleniyor...";
             let tempHtml = '<div class="text-[11px] font-bold text-slate-400 border-b border-slate-700 pb-1 mb-2">Yükleniyor...</div>';
             for(let i=0; i<files.length; i++) tempHtml += `<div class="text-[10px] text-amber-400 truncate animate-pulse mb-1">⏳ ${files[i].name}</div>`;
             filesContainer.innerHTML = tempHtml;
-
-            const formData = new FormData();
-            for(let i=0; i<files.length; i++) formData.append('files', files[i]);
-
+            const formData = new FormData(); for(let i=0; i<files.length; i++) formData.append('files', files[i]);
             const {ok, data} = await safeFetch(`/api/chapters/upload/${id}/${task}`, { method: 'POST', body: formData });
             if(ok && data.success) {
                 let successHtml = '<div class="text-[11px] font-bold text-slate-400 border-b border-slate-700 pb-1 mb-2">Eklenen Dosyalar</div>';
                 for(let i=0; i<files.length; i++) successHtml += `<div class="text-[10px] text-emerald-400 truncate font-bold mb-1">✅ Başarılı: ${files[i].name}</div>`;
-                filesContainer.innerHTML = successHtml;
-                uploadLabel.innerText = "📎 Yükle";
-                setTimeout(() => { fileInput.value = ''; loadData(); }, 1000);
+                filesContainer.innerHTML = successHtml; uploadLabel.innerText = "📎 Yükle"; setTimeout(() => { fileInput.value = ''; loadData(); }, 1000);
             } else { alert(data.error); loadData(); }
         }
-
-        async function submitStage(id, task) {
-            const {ok, data} = await safeFetch(`/api/chapters/submit/${id}/${task}`, {method: 'POST'});
-            if(ok && data.success) { loadData(); if(!document.getElementById('view-stats').classList.contains('hidden')) loadStats(); } else alert(data.error);
-        }
-
+        async function submitStage(id, task) { const {ok, data} = await safeFetch(`/api/chapters/submit/${id}/${task}`, {method: 'POST'}); if(ok && data.success) { loadData(); if(!document.getElementById('view-stats').classList.contains('hidden')) loadStats(); } else alert(data.error); }
+        
         async function createUser() {
-            const u = document.getElementById('new-user-name').value;
-            const p = document.getElementById('new-user-pass').value;
-            const checkedBoxes = document.querySelectorAll('.role-cb:checked');
-            const selectedRoles = Array.from(checkedBoxes).map(cb => cb.value);
+            const u = document.getElementById('new-user-name').value; const p = document.getElementById('new-user-pass').value;
+            const checkedBoxes = document.querySelectorAll('.role-cb:checked'); const selectedRoles = Array.from(checkedBoxes).map(cb => cb.value);
             if(!u || !p || selectedRoles.length === 0) return alert('İsim, Şifre ve rol seçin.');
             const {ok, data} = await safeFetch('/api/admin/users', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({username: u, password: p, roles: selectedRoles}) });
             if(ok && data.success) { document.getElementById('new-user-name').value = ''; document.getElementById('new-user-pass').value = ''; checkedBoxes.forEach(cb => cb.checked = false); loadData(); alert('Üye Eklendi!'); } else { alert(data.error); }
         }
-
-        async function deleteUser(id) {
-            if(!confirm("Kullanıcıyı silmek istediğinize emin misiniz?")) return;
-            const {ok, data} = await safeFetch(`/api/admin/users/${id}`, {method: 'DELETE'});
-            if(ok && data.success) loadData(); else alert(data.error);
-        }
-
+        async function deleteUser(id) { if(!confirm("Kullanıcıyı silmek istediğinize emin misiniz?")) return; const {ok, data} = await safeFetch(`/api/admin/users/${id}`, {method: 'DELETE'}); if(ok && data.success) loadData(); else alert(data.error); }
         async function updateUserRoles(id) {
-            const checkedBoxes = document.querySelectorAll(`.role-edit-${id}:checked`);
-            const selectedRoles = Array.from(checkedBoxes).map(cb => cb.value);
+            const checkedBoxes = document.querySelectorAll(`.role-edit-${id}:checked`); const selectedRoles = Array.from(checkedBoxes).map(cb => cb.value);
             if(selectedRoles.length === 0) { alert("En az 1 rol olmalı!"); loadData(); return; }
             const {ok, data} = await safeFetch(`/api/admin/users/${id}/roles`, { method: 'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({roles: selectedRoles}) });
             if(!ok || !data.success) alert(data.error);
         }
-
         async function createSeries() {
-            const title = document.getElementById('new-series-title').value;
-            const file = document.getElementById('new-series-cover').files[0];
+            const title = document.getElementById('new-series-title').value; const file = document.getElementById('new-series-cover').files[0];
             if(!title || !file) return alert('Başlık ve kapak dosyası zorunlu.');
             const fd = new FormData(); fd.append('title', title); fd.append('cover', file);
             const {ok, data} = await safeFetch('/api/admin/series', { method: 'POST', body: fd });
             if(ok && data.success) { document.getElementById('new-series-title').value = ''; document.getElementById('new-series-cover').value = ''; loadData(); alert('Seri Eklendi!');} else { alert(data.error); }
         }
-
+        
         async function createChapter() {
-            const series_id = document.getElementById('new-chapter-series').value;
+            const seriesSelect = document.getElementById('new-chapter-series');
+            const series_id = seriesSelect.value;
             const num = document.getElementById('new-chapter-num').value;
             const url = document.getElementById('new-chapter-url').value;
             if(!series_id || !num || !url) return alert('Tüm alanları doldurun.');
             const {ok, data} = await safeFetch('/api/admin/chapters', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ series_id: parseInt(series_id), chapter_number: parseInt(num), source_link: url }) });
-            if(ok && data.success) { document.getElementById('new-chapter-num').value = ''; document.getElementById('new-chapter-url').value = ''; loadData(); alert('Bölüm havuza eklendi!'); } else { alert(data.error); }
+            
+            if(ok && data.success) { 
+                document.getElementById('new-chapter-num').value = ''; 
+                document.getElementById('new-chapter-url').value = ''; 
+                // HATA FİX: Dropdown temizlenmez, seçili seri aynı kalır. 
+                loadData(); 
+                alert('Bölüm havuza eklendi!'); 
+            } else { alert(data.error); }
         }
-
-        async function deleteSeriesAPI(id) {
-            if(!confirm('DİKKAT: Bu seriyi, seriye ait TÜM BÖLÜMLERİ ve YÜKLENEN DOSYALARI silmek istediğinize emin misiniz? Bu işlem geri alınamaz!')) return;
-            const {ok, data} = await safeFetch(`/api/admin/series/${id}`, {method: 'DELETE'});
-            if(ok && data.success) { alert('Seri ve içerikleri tamamen silindi!'); loadData(); } else { alert(data.error); }
-        }
-
-        async function deleteChapterAPI(id) {
-            if(!confirm('DİKKAT: Bu bölümü ve içindeki dosyaları silmek istediğinize emin misiniz?')) return;
-            const {ok, data} = await safeFetch(`/api/admin/chapters/${id}`, {method: 'DELETE'});
-            if(ok && data.success) { alert('Bölüm silindi!'); loadData(); } else { alert(data.error); }
-        }
-
+        
+        async function deleteSeriesAPI(id) { if(!confirm('DİKKAT: Bu seriyi, seriye ait TÜM BÖLÜMLERİ ve YÜKLENEN DOSYALARI silmek istediğinize emin misiniz? Bu işlem geri alınamaz!')) return; const {ok, data} = await safeFetch(`/api/admin/series/${id}`, {method: 'DELETE'}); if(ok && data.success) { alert('Seri ve içerikleri tamamen silindi!'); loadData(); } else { alert(data.error); } }
+        async function deleteChapterAPI(id) { if(!confirm('DİKKAT: Bu bölümü ve içindeki dosyaları silmek istediğinize emin misiniz?')) return; const {ok, data} = await safeFetch(`/api/admin/chapters/${id}`, {method: 'DELETE'}); if(ok && data.success) { alert('Bölüm silindi!'); loadData(); } else { alert(data.error); } }
+        
         window.onload = checkSession;
     </script>
 </body>
