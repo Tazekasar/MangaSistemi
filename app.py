@@ -553,6 +553,36 @@ def create_series_api():
         conn.close()
     return jsonify({'success': True})
 
+# FİX: SERİ SİLME HATASI (SUNUCU HATASI) KÖKTEN ÇÖZÜLDÜ
+@app.route('/api/admin/series/<int:series_id>', methods=['DELETE'])
+@require_role('Controller')
+def delete_series_api(series_id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        series = cur.execute('SELECT cover_filename FROM series WHERE id = ?', (series_id,)).fetchone()
+        if series and series['cover_filename']:
+            try: os.remove(os.path.join(app.config['COVER_FOLDER'], series['cover_filename']))
+            except: pass
+            
+        chapters = cur.execute('SELECT id FROM chapters WHERE series_id = ?', (series_id,)).fetchall()
+        for ch in chapters:
+            files = cur.execute('SELECT filename FROM chapter_files WHERE chapter_id = ?', (ch['id'],)).fetchall()
+            for f in files:
+                try: os.remove(os.path.join(app.config['CHAPTER_FOLDER'], f['filename']))
+                except: pass
+            cur.execute('DELETE FROM chapter_files WHERE chapter_id = ?', (ch['id'],))
+            cur.execute('DELETE FROM chapters WHERE id = ?', (ch['id'],))
+            
+        cur.execute('DELETE FROM series WHERE id = ?', (series_id,))
+        conn.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'error': f'Hata oluştu: {str(e)}'}), 500
+    finally:
+        conn.close()
+
 @app.route('/api/admin/chapters', methods=['POST'])
 @require_role('Controller')
 def create_chapter_api():
@@ -568,7 +598,6 @@ def create_chapter_api():
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # KOD SEVİYESİNDE MANUEL KONTROL (Kopya Bölüm Engeli)
     existing_chapter = cur.execute(
         'SELECT id FROM chapters WHERE series_id = ? AND chapter_number = ?',
         (data['series_id'], data['chapter_number'])
@@ -593,15 +622,20 @@ def create_chapter_api():
 def delete_chapter_api(chapter_id):
     conn = get_db_connection()
     cur = conn.cursor()
-    files = cur.execute('SELECT filename FROM chapter_files WHERE chapter_id = ?', (chapter_id,)).fetchall()
-    for f in files:
-        try: os.remove(os.path.join(app.config['CHAPTER_FOLDER'], f['filename']))
-        except: pass
-    cur.execute('DELETE FROM chapter_files WHERE chapter_id = ?', (chapter_id,))
-    cur.execute('DELETE FROM chapters WHERE id = ?', (chapter_id,))
-    conn.commit()
-    conn.close()
-    return jsonify({'success': True})
+    try:
+        files = cur.execute('SELECT filename FROM chapter_files WHERE chapter_id = ?', (chapter_id,)).fetchall()
+        for f in files:
+            try: os.remove(os.path.join(app.config['CHAPTER_FOLDER'], f['filename']))
+            except: pass
+        cur.execute('DELETE FROM chapter_files WHERE chapter_id = ?', (chapter_id,))
+        cur.execute('DELETE FROM chapters WHERE id = ?', (chapter_id,))
+        conn.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'error': f'Hata oluştu: {str(e)}'}), 500
+    finally:
+        conn.close()
 
 ROLE_MAP_TASK = {
     'TRANSLATION': 'Translator',

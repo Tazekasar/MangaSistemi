@@ -54,16 +54,16 @@
         </div>
     </div>
 
+    <!-- FİX: GLOBALE ALINAN SIDEBAR VE YAPI DEĞİŞİKLİĞİ -->
     <div id="main-view" class="h-full flex flex-col hidden relative fade-in">
         <header class="bg-slate-900 border-b-2 border-slate-800 px-4 md:px-6 py-3 md:py-4 flex justify-between items-center shrink-0 safe-area-pt">
             <div class="flex items-center gap-3 md:gap-6">
-                <button onclick="toggleMobileSidebar()" class="md:hidden text-slate-400 hover:text-white focus:outline-none p-1 -ml-1">
+                <button onclick="toggleMobileSidebar()" class="md:hidden text-slate-400 hover:text-white focus:outline-none p-1 -ml-1 z-50 relative">
                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                 </button>
                 <div class="flex items-center gap-2">
                     <h1 class="text-xl font-bold tracking-tight text-white">MangaFlow</h1>
                 </div>
-                
                 <nav id="desktop-nav" class="hidden md:flex gap-5 text-sm font-bold text-slate-400 mt-1"></nav>
             </div>
             <div class="flex items-center gap-3 md:gap-4">
@@ -80,11 +80,12 @@
 
         <div id="mobile-nav" class="md:hidden flex justify-start gap-1 bg-slate-900 border-b border-slate-800 p-2 shrink-0 text-xs font-bold text-slate-400 overflow-x-auto safe-area-pb hide-scrollbar px-3"></div>
 
-        <div id="view-kanban" class="flex flex-1 overflow-hidden view-section relative">
-            <div id="mobile-overlay" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-30 hidden md:hidden transition-opacity"></div>
+        <div class="flex flex-1 overflow-hidden relative w-full">
             
-            <aside id="main-sidebar" class="fixed inset-y-0 left-0 z-40 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 w-[85%] max-w-[320px] md:w-[340px] bg-slate-900 border-r border-slate-800 p-4 flex flex-col shrink-0 overflow-y-auto shadow-2xl md:shadow-none">
-                <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-800">
+            <div id="mobile-overlay" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-30 hidden transition-opacity md:hidden"></div>
+            
+            <aside id="main-sidebar" class="fixed inset-y-0 left-0 z-40 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 w-[85%] max-w-[320px] md:w-[340px] bg-slate-900 border-r border-slate-800 p-4 flex flex-col shrink-0 overflow-y-auto shadow-2xl md:shadow-none h-full">
+                <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-800 mt-12 md:mt-0">
                     <h2 class="text-sm font-bold text-slate-400 uppercase tracking-widest">📋 ALDIĞIM GÖREVLER</h2>
                     <button onclick="toggleMobileSidebar()" class="md:hidden text-slate-400 hover:text-white p-1 rounded-lg bg-slate-800">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -113,133 +114,134 @@
                 </div>
             </aside>
 
-            <main class="flex-1 p-4 md:p-6 space-y-6 overflow-y-auto bg-slate-950 w-full pb-24 md:pb-6 relative">
-                
-                <div class="flex justify-end gap-2 mb-3 px-1 w-full border-b border-slate-800/50 pb-3">
-                    <button onclick="toggleHideAssigned()" id="hide-assigned-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-3 py-2 rounded-lg border border-slate-700 flex items-center gap-2 active:scale-95 transition-all shadow-md">
-                        🙈 Doluları Gizle
-                    </button>
-                    <button onclick="toggleMobileLayout()" id="mobile-layout-btn" class="md:hidden bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-3 py-2 rounded-lg border border-slate-700 flex items-center gap-2 active:scale-95 transition-all shadow-md">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                        Tekli Görünüm
-                    </button>
-                </div>
-
-                <div id="lane-PENDING_TRANSLATION" class="kanban-lane bg-slate-900/40 p-4 md:p-5 rounded-xl border border-slate-800/80 hidden transition-all duration-300">
-                    <div onclick="toggleLane('PENDING_TRANSLATION')" class="cursor-pointer flex items-center gap-3 mb-2 select-none group border-b border-slate-800/50 pb-3">
-                        <div class="bg-slate-800 group-hover:bg-slate-700 p-1.5 rounded-lg transition-colors">
-                            <svg id="arrow-PENDING_TRANSLATION" class="w-5 h-5 text-amber-400 transform transition-transform duration-300 rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
-                        </div>
-                        <h3 class="text-base font-bold text-amber-400 tracking-wider uppercase group-hover:text-amber-300 transition-colors">1. ÇEVİRİ BEKLEYEN</h3>
+            <div class="flex-1 relative overflow-hidden bg-slate-950 w-full flex flex-col">
+                <main id="view-kanban" class="view-section flex-1 p-4 md:p-6 space-y-6 overflow-y-auto w-full pb-24 md:pb-6 relative">
+                    <div class="flex justify-end gap-2 mb-3 px-1 w-full border-b border-slate-800/50 pb-3">
+                        <button onclick="toggleHideAssigned()" id="hide-assigned-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-3 py-2 rounded-lg border border-slate-700 flex items-center gap-2 active:scale-95 transition-all shadow-md">
+                            🙈 Doluları Gizle
+                        </button>
+                        <button onclick="toggleMobileLayout()" id="mobile-layout-btn" class="md:hidden bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-3 py-2 rounded-lg border border-slate-700 flex items-center gap-2 active:scale-95 transition-all shadow-md">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                            Tekli Görünüm
+                        </button>
                     </div>
-                    <div id="container-PENDING_TRANSLATION" class="lane-container grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 mt-4 transition-all duration-300"></div>
-                </div>
 
-                <div id="lane-PENDING_CLEANING" class="kanban-lane bg-slate-900/40 p-4 md:p-5 rounded-xl border border-slate-800/80 hidden transition-all duration-300">
-                    <div onclick="toggleLane('PENDING_CLEANING')" class="cursor-pointer flex items-center gap-3 mb-2 select-none group border-b border-slate-800/50 pb-3">
-                        <div class="bg-slate-800 group-hover:bg-slate-700 p-1.5 rounded-lg transition-colors">
-                            <svg id="arrow-PENDING_CLEANING" class="w-5 h-5 text-teal-400 transform transition-transform duration-300 rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
+                    <div id="lane-PENDING_TRANSLATION" class="kanban-lane bg-slate-900/40 p-4 md:p-5 rounded-xl border border-slate-800/80 hidden transition-all duration-300">
+                        <div onclick="toggleLane('PENDING_TRANSLATION')" class="cursor-pointer flex items-center gap-3 mb-2 select-none group border-b border-slate-800/50 pb-3">
+                            <div class="bg-slate-800 group-hover:bg-slate-700 p-1.5 rounded-lg transition-colors">
+                                <svg id="arrow-PENDING_TRANSLATION" class="w-5 h-5 text-amber-400 transform transition-transform duration-300 rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                            <h3 class="text-base font-bold text-amber-400 tracking-wider uppercase group-hover:text-amber-300 transition-colors">1. ÇEVİRİ BEKLEYEN</h3>
                         </div>
-                        <h3 class="text-base font-bold text-teal-400 tracking-wider uppercase group-hover:text-teal-300 transition-colors">2. TEMİZLİK BEKLEYEN</h3>
+                        <div id="container-PENDING_TRANSLATION" class="lane-container grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 mt-4 transition-all duration-300"></div>
                     </div>
-                    <div id="container-PENDING_CLEANING" class="lane-container grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 mt-4 transition-all duration-300"></div>
-                </div>
-                
-                <div id="lane-PENDING_PROOFREADING" class="kanban-lane bg-slate-900/40 p-4 md:p-5 rounded-xl border border-slate-800/80 hidden transition-all duration-300">
-                    <div onclick="toggleLane('PENDING_PROOFREADING')" class="cursor-pointer flex items-center gap-3 mb-2 select-none group border-b border-slate-800/50 pb-3">
-                        <div class="bg-slate-800 group-hover:bg-slate-700 p-1.5 rounded-lg transition-colors">
-                            <svg id="arrow-PENDING_PROOFREADING" class="w-5 h-5 text-blue-400 transform transition-transform duration-300 rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
+                    
+                    <div id="lane-PENDING_CLEANING" class="kanban-lane bg-slate-900/40 p-4 md:p-5 rounded-xl border border-slate-800/80 hidden transition-all duration-300">
+                        <div onclick="toggleLane('PENDING_CLEANING')" class="cursor-pointer flex items-center gap-3 mb-2 select-none group border-b border-slate-800/50 pb-3">
+                            <div class="bg-slate-800 group-hover:bg-slate-700 p-1.5 rounded-lg transition-colors">
+                                <svg id="arrow-PENDING_CLEANING" class="w-5 h-5 text-teal-400 transform transition-transform duration-300 rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                            <h3 class="text-base font-bold text-teal-400 tracking-wider uppercase group-hover:text-teal-300 transition-colors">2. TEMİZLİK BEKLEYEN</h3>
                         </div>
-                        <h3 class="text-base font-bold text-blue-400 tracking-wider uppercase group-hover:text-blue-300 transition-colors">3. REDAKTE BEKLEYEN</h3>
+                        <div id="container-PENDING_CLEANING" class="lane-container grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 mt-4 transition-all duration-300"></div>
                     </div>
-                    <div id="container-PENDING_PROOFREADING" class="lane-container grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 mt-4 transition-all duration-300"></div>
-                </div>
 
-                <div id="lane-PENDING_TYPESETTING" class="kanban-lane bg-slate-900/40 p-4 md:p-5 rounded-xl border border-slate-800/80 hidden transition-all duration-300">
-                    <div onclick="toggleLane('PENDING_TYPESETTING')" class="cursor-pointer flex items-center gap-3 mb-2 select-none group border-b border-slate-800/50 pb-3">
-                        <div class="bg-slate-800 group-hover:bg-slate-700 p-1.5 rounded-lg transition-colors">
-                            <svg id="arrow-PENDING_TYPESETTING" class="w-5 h-5 text-purple-400 transform transition-transform duration-300 rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
+                    <div id="lane-PENDING_PROOFREADING" class="kanban-lane bg-slate-900/40 p-4 md:p-5 rounded-xl border border-slate-800/80 hidden transition-all duration-300">
+                        <div onclick="toggleLane('PENDING_PROOFREADING')" class="cursor-pointer flex items-center gap-3 mb-2 select-none group border-b border-slate-800/50 pb-3">
+                            <div class="bg-slate-800 group-hover:bg-slate-700 p-1.5 rounded-lg transition-colors">
+                                <svg id="arrow-PENDING_PROOFREADING" class="w-5 h-5 text-blue-400 transform transition-transform duration-300 rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                            <h3 class="text-base font-bold text-blue-400 tracking-wider uppercase group-hover:text-blue-300 transition-colors">3. REDAKTE BEKLEYEN</h3>
                         </div>
-                        <h3 class="text-base font-bold text-purple-400 tracking-wider uppercase group-hover:text-purple-300 transition-colors">4. DİZGİ BEKLEYEN</h3>
+                        <div id="container-PENDING_PROOFREADING" class="lane-container grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 mt-4 transition-all duration-300"></div>
                     </div>
-                    <div id="container-PENDING_TYPESETTING" class="lane-container grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 mt-4 transition-all duration-300"></div>
-                </div>
 
-                <div id="lane-PENDING_PUBLISHING" class="kanban-lane bg-rose-950/20 p-4 md:p-5 rounded-xl border border-rose-900/50 hidden transition-all duration-300">
-                    <div onclick="toggleLane('PENDING_PUBLISHING')" class="cursor-pointer flex items-center gap-3 mb-2 select-none group border-b border-rose-900/50 pb-3">
-                        <div class="bg-rose-900 group-hover:bg-rose-800 p-1.5 rounded-lg transition-colors">
-                            <svg id="arrow-PENDING_PUBLISHING" class="w-5 h-5 text-rose-300 transform transition-transform duration-300 rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
+                    <div id="lane-PENDING_TYPESETTING" class="kanban-lane bg-slate-900/40 p-4 md:p-5 rounded-xl border border-slate-800/80 hidden transition-all duration-300">
+                        <div onclick="toggleLane('PENDING_TYPESETTING')" class="cursor-pointer flex items-center gap-3 mb-2 select-none group border-b border-slate-800/50 pb-3">
+                            <div class="bg-slate-800 group-hover:bg-slate-700 p-1.5 rounded-lg transition-colors">
+                                <svg id="arrow-PENDING_TYPESETTING" class="w-5 h-5 text-purple-400 transform transition-transform duration-300 rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                            <h3 class="text-base font-bold text-purple-400 tracking-wider uppercase group-hover:text-purple-300 transition-colors">4. DİZGİ BEKLEYEN</h3>
                         </div>
-                        <h3 class="text-base font-bold text-rose-400 tracking-wider uppercase group-hover:text-rose-300 transition-colors">5. YAYINLANMA BEKLEYEN</h3>
+                        <div id="container-PENDING_TYPESETTING" class="lane-container grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 mt-4 transition-all duration-300"></div>
                     </div>
-                    <div id="container-PENDING_PUBLISHING" class="lane-container grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 mt-4 transition-all duration-300"></div>
+
+                    <div id="lane-PENDING_PUBLISHING" class="kanban-lane bg-rose-950/20 p-4 md:p-5 rounded-xl border border-rose-900/50 hidden transition-all duration-300">
+                        <div onclick="toggleLane('PENDING_PUBLISHING')" class="cursor-pointer flex items-center gap-3 mb-2 select-none group border-b border-rose-900/50 pb-3">
+                            <div class="bg-rose-900 group-hover:bg-rose-800 p-1.5 rounded-lg transition-colors">
+                                <svg id="arrow-PENDING_PUBLISHING" class="w-5 h-5 text-rose-300 transform transition-transform duration-300 rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                            <h3 class="text-base font-bold text-rose-400 tracking-wider uppercase group-hover:text-rose-300 transition-colors">5. YAYINLANMA (KONTROL) BEKLEYEN</h3>
+                        </div>
+                        <div id="container-PENDING_PUBLISHING" class="lane-container grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 mt-4 transition-all duration-300"></div>
+                    </div>
+                </main>
+
+                <div id="view-published" class="view-section flex-1 p-4 md:p-8 overflow-y-auto hidden w-full pb-24 md:pb-8">
+                    <h2 class="text-xl md:text-2xl font-bold text-white mb-6 border-b border-slate-700 pb-3">✅ Yayınlanmış Bölümler</h2>
+                    <div id="published-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6"></div>
                 </div>
 
-            </main>
-        </div>
-
-        <div id="view-published" class="flex-1 bg-slate-950 p-4 md:p-8 overflow-y-auto hidden view-section w-full pb-24 md:pb-8">
-            <h2 class="text-xl md:text-2xl font-bold text-white mb-6 border-b border-slate-700 pb-3">✅ Yayınlanmış Bölümler</h2>
-            <div id="published-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6"></div>
-        </div>
-
-        <div id="view-series" class="flex-1 bg-slate-950 p-4 md:p-8 overflow-y-auto hidden view-section w-full pb-24 md:pb-8">
-            <h2 class="text-xl md:text-2xl font-bold text-white mb-6 border-b border-slate-700 pb-3">👑 Seriler ve Bölüm Yönetimi</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 space-y-4 shadow-md">
-                    <h3 class="text-sm font-bold text-indigo-400 uppercase">1. Yeni Seri Ekle</h3>
-                    <input type="text" id="new-series-title" placeholder="Seri Başlığı" class="w-full bg-slate-900 text-sm rounded-lg p-3 text-white border border-slate-700">
-                    <input type="file" id="new-series-cover" class="w-full text-sm text-slate-300 bg-slate-900 p-2 rounded-lg border border-slate-700" accept=".png,.jpg,.jpeg,.webp">
-                    <button onclick="createSeries()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-lg active:scale-95 transition-transform">Seriyi Kaydet</button>
+                <div id="view-series" class="view-section flex-1 p-4 md:p-8 overflow-y-auto hidden w-full pb-24 md:pb-8">
+                    <h2 class="text-xl md:text-2xl font-bold text-white mb-6 border-b border-slate-700 pb-3">👑 Seriler ve Bölüm Yönetimi</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 space-y-4 shadow-md">
+                            <h3 class="text-sm font-bold text-indigo-400 uppercase">1. Yeni Seri Ekle</h3>
+                            <input type="text" id="new-series-title" placeholder="Seri Başlığı" class="w-full bg-slate-900 text-sm rounded-lg p-3 text-white border border-slate-700">
+                            <input type="file" id="new-series-cover" class="w-full text-sm text-slate-300 bg-slate-900 p-2 rounded-lg border border-slate-700" accept=".png,.jpg,.jpeg,.webp">
+                            <button onclick="createSeries()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-lg active:scale-95 transition-transform">Seriyi Kaydet</button>
+                        </div>
+                        <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 space-y-4 shadow-md">
+                            <h3 class="text-sm font-bold text-amber-400 uppercase">2. Bölüm Yarat (Havuza At)</h3>
+                            <select id="new-chapter-series" class="w-full bg-slate-900 text-sm rounded-lg p-3 text-white border border-slate-700"></select>
+                            <input type="number" id="new-chapter-num" placeholder="Bölüm No" class="w-full bg-slate-900 text-sm rounded-lg p-3 text-white border border-slate-700">
+                            <input type="url" id="new-chapter-url" placeholder="Kaynak Linki (URL) - ZORUNLU" class="w-full bg-slate-900 text-sm rounded-lg p-3 text-white border border-slate-700">
+                            <button onclick="createChapter()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 rounded-lg active:scale-95 transition-transform">Havuza Gönder</button>
+                        </div>
+                    </div>
+                    <div class="bg-slate-800 p-4 md:p-6 rounded-xl border border-slate-700 shadow-md">
+                        <h3 class="text-sm font-bold text-rose-400 uppercase mb-4 border-b border-slate-700 pb-2">Silme İşlemleri (Tüm Veritabanı)</h3>
+                        <div id="admin-series-list" class="space-y-6"></div>
+                    </div>
                 </div>
-                <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 space-y-4 shadow-md">
-                    <h3 class="text-sm font-bold text-amber-400 uppercase">2. Bölüm Yarat (Havuza At)</h3>
-                    <select id="new-chapter-series" class="w-full bg-slate-900 text-sm rounded-lg p-3 text-white border border-slate-700"></select>
-                    <input type="number" id="new-chapter-num" placeholder="Bölüm No" class="w-full bg-slate-900 text-sm rounded-lg p-3 text-white border border-slate-700">
-                    <input type="url" id="new-chapter-url" placeholder="Kaynak Linki (URL)" class="w-full bg-slate-900 text-sm rounded-lg p-3 text-white border border-slate-700">
-                    <button onclick="createChapter()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 rounded-lg active:scale-95 transition-transform">Havuza Gönder</button>
+
+                <div id="view-profile" class="view-section flex-1 p-4 md:p-8 overflow-y-auto hidden w-full pb-24 md:pb-8">
+                    <div class="w-full max-w-md mx-auto bg-slate-900 border-2 border-slate-800 p-6 md:p-8 rounded-xl shadow-xl">
+                        <h2 class="text-xl md:text-2xl font-bold text-white mb-6 border-b border-slate-700 pb-3">Profilimi Düzenle</h2>
+                        <div class="flex flex-col items-center mb-8 text-center">
+                            <div id="profile-edit-avatar" class="w-28 h-28 md:w-32 md:h-32 rounded-full border-4 border-indigo-500/50 mb-5 bg-cover bg-center shadow-lg bg-slate-800 flex items-center justify-center text-xs text-slate-500 overflow-hidden"></div>
+                            <div class="flex flex-col sm:flex-row gap-3 w-full justify-center">
+                                <label id="lbl-select-photo" class="cursor-pointer bg-indigo-600 hover:bg-indigo-500 text-white text-sm px-5 py-3 rounded-lg font-bold transition-colors w-full sm:w-auto text-center active:scale-95">📷 Fotoğraf Seç
+                                    <input type="file" id="profile-file" accept=".png,.jpg,.jpeg,.webp" class="hidden" onchange="previewAvatar(event)">
+                                </label>
+                                <button id="btn-delete-avatar" onclick="deleteAvatar()" class="hidden bg-rose-700 hover:bg-rose-600 text-white text-sm px-5 py-3 rounded-lg font-bold transition-colors w-full sm:w-auto active:scale-95">🗑️ Resmi Sil</button>
+                            </div>
+                        </div>
+                        <div class="space-y-5">
+                            <div>
+                                <label class="block text-sm font-bold text-slate-400 mb-2">Görünür İsim (Kullanıcı Adı):</label>
+                                <input type="text" id="profile-name" class="w-full bg-slate-800 text-white rounded-lg p-4 border border-slate-700 outline-none focus:border-indigo-500 text-base">
+                                <p id="averis-p-info" class="text-xs text-amber-300 mt-2 hidden italic">Süper yönetici ismi kalıcıdır.</p>
+                            </div>
+                            <button id="profile-save-btn" onclick="saveProfile()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-lg transition-colors active:scale-95 text-lg shadow-md mt-4">Değişiklikleri Kaydet</button>
+                        </div>
+                    </div>
                 </div>
+
+                <div id="view-stats" class="view-section flex-1 p-4 md:p-8 overflow-y-auto hidden w-full pb-24 md:pb-8">
+                    <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4 border-b border-slate-700 pb-4">
+                        <div>
+                            <h2 class="text-xl md:text-2xl font-bold text-white mb-2">🏆 Ekip Emek Panosu</h2>
+                            <p class="text-slate-400 text-sm">Takım arkadaşlarının bitirdiği görev sayıları.</p>
+                        </div>
+                        <button id="stats-sort-btn" onclick="toggleStatsSort()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-lg active:scale-95 transition-all shadow-md flex items-center justify-center gap-2">
+                            📊 Sıralama: En Çok Yapan
+                        </button>
+                    </div>
+                    <div id="stats-grid" class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-6"></div>
+                </div>
+
             </div>
-            <div class="bg-slate-800 p-4 md:p-6 rounded-xl border border-slate-700 shadow-md">
-                <h3 class="text-sm font-bold text-rose-400 uppercase mb-4 border-b border-slate-700 pb-2">Silme İşlemleri (Tüm Veritabanı)</h3>
-                <div id="admin-series-list" class="space-y-6"></div>
-            </div>
-        </div>
-
-        <div id="view-profile" class="flex-1 bg-slate-950 p-4 md:p-8 overflow-y-auto hidden view-section w-full pb-24 md:pb-8">
-            <div class="w-full max-w-md mx-auto bg-slate-900 border-2 border-slate-800 p-6 md:p-8 rounded-xl shadow-xl">
-                <h2 class="text-xl md:text-2xl font-bold text-white mb-6 border-b border-slate-700 pb-3">Profilimi Düzenle</h2>
-                <div class="flex flex-col items-center mb-8 text-center">
-                    <div id="profile-edit-avatar" class="w-28 h-28 md:w-32 md:h-32 rounded-full border-4 border-indigo-500/50 mb-5 bg-cover bg-center shadow-lg bg-slate-800 flex items-center justify-center text-xs text-slate-500 overflow-hidden"></div>
-                    <div class="flex flex-col sm:flex-row gap-3 w-full justify-center">
-                        <label id="lbl-select-photo" class="cursor-pointer bg-indigo-600 hover:bg-indigo-500 text-white text-sm px-5 py-3 rounded-lg font-bold transition-colors w-full sm:w-auto text-center active:scale-95">📷 Fotoğraf Seç
-                            <input type="file" id="profile-file" accept=".png,.jpg,.jpeg,.webp" class="hidden" onchange="previewAvatar(event)">
-                        </label>
-                        <button id="btn-delete-avatar" onclick="deleteAvatar()" class="hidden bg-rose-700 hover:bg-rose-600 text-white text-sm px-5 py-3 rounded-lg font-bold transition-colors w-full sm:w-auto active:scale-95">🗑️ Resmi Sil</button>
-                    </div>
-                </div>
-                <div class="space-y-5">
-                    <div>
-                        <label class="block text-sm font-bold text-slate-400 mb-2">Görünür İsim (Kullanıcı Adı):</label>
-                        <input type="text" id="profile-name" class="w-full bg-slate-800 text-white rounded-lg p-4 border border-slate-700 outline-none focus:border-indigo-500 text-base">
-                        <p id="averis-p-info" class="text-xs text-amber-300 mt-2 hidden italic">Süper yönetici ismi kalıcıdır.</p>
-                    </div>
-                    <button id="profile-save-btn" onclick="saveProfile()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-lg transition-colors active:scale-95 text-lg shadow-md mt-4">Değişiklikleri Kaydet</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="view-stats" class="flex-1 bg-slate-950 p-4 md:p-8 overflow-y-auto hidden view-section w-full pb-24 md:pb-8">
-            <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4 border-b border-slate-700 pb-4">
-                <div>
-                    <h2 class="text-xl md:text-2xl font-bold text-white mb-2">🏆 Ekip Emek Panosu</h2>
-                    <p class="text-slate-400 text-sm">Takım arkadaşlarının bitirdiği görev sayıları.</p>
-                </div>
-                <button id="stats-sort-btn" onclick="toggleStatsSort()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-lg active:scale-95 transition-all shadow-md flex items-center justify-center gap-2">
-                    📊 Sıralama: En Çok Yapan
-                </button>
-            </div>
-            <div id="stats-grid" class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-6"></div>
         </div>
     </div>
 
@@ -262,6 +264,22 @@
             'PENDING_PUBLISHING': '<span class="text-rose-400">👑 Yayın</span>',
             'PUBLISHED': '<span class="text-emerald-400">✅ Bitti</span>'
         };
+
+        function getDetailedStatusHTML(ch) {
+            if (ch.status === 'TRANS_CLEAN') {
+                if (ch.is_cleaned) return '<span class="text-teal-400 font-bold">Temizlik Bitti, <span class="text-amber-400">Çeviri Bekliyor</span></span>';
+                return '<span class="text-amber-400 font-bold">Çeviri <span class="text-slate-400">&</span> <span class="text-teal-400">Temizlik Bekliyor</span></span>';
+            }
+            if (ch.status === 'PROOF_CLEAN') {
+                if (ch.is_cleaned && !ch.is_proofread) return '<span class="text-emerald-400 font-bold">Çeviri & Temizlik Bitti, <span class="text-blue-400">Redakte Bekliyor</span></span>';
+                if (!ch.is_cleaned && ch.is_proofread) return '<span class="text-blue-500 font-bold">Çeviri & Redakte Bitti, <span class="text-teal-400">Temizlik Bekliyor</span></span>';
+                return '<span class="text-amber-500 font-bold">Çeviri Bitti, <span class="text-blue-400">Redakte</span> <span class="text-slate-400">&</span> <span class="text-teal-400">Temizlik Bekliyor</span></span>';
+            }
+            if (ch.status === 'PENDING_TYPESETTING') return '<span class="text-purple-400 font-bold">Dizgi Bekliyor</span>';
+            if (ch.status === 'PENDING_PUBLISHING') return '<span class="text-rose-400 font-bold">Yayın Kontrolü Bekliyor</span>';
+            if (ch.status === 'PUBLISHED') return '<span class="text-emerald-500 font-black">Yayınlandı</span>';
+            return '<span class="text-slate-500">' + ch.status + '</span>';
+        }
 
         const DEFAULT_AVATAR = "/profiles/profil.png"; 
 
@@ -534,23 +552,6 @@
             });
         }
 
-        // FİX: DETAYLI VE RENKLİ STATE MACHINE (Durum Makinesi) GÖSTERİMİ
-        function getDetailedStatusHTML(ch) {
-            if (ch.status === 'TRANS_CLEAN') {
-                if (ch.is_cleaned) return '<span class="text-teal-400 font-bold">Temizlik Bitti, <span class="text-amber-400">Çeviri Bekliyor</span></span>';
-                return '<span class="text-amber-400 font-bold">Çeviri <span class="text-slate-400">&</span> <span class="text-teal-400">Temizlik Bekliyor</span></span>';
-            }
-            if (ch.status === 'PROOF_CLEAN') {
-                if (ch.is_cleaned && !ch.is_proofread) return '<span class="text-emerald-400 font-bold">Çeviri & Temizlik Bitti, <span class="text-blue-400">Redakte Bekliyor</span></span>';
-                if (!ch.is_cleaned && ch.is_proofread) return '<span class="text-blue-500 font-bold">Çeviri & Redakte Bitti, <span class="text-teal-400">Temizlik Bekliyor</span></span>';
-                return '<span class="text-amber-500 font-bold">Çeviri Bitti, <span class="text-blue-400">Redakte</span> <span class="text-slate-400">&</span> <span class="text-teal-400">Temizlik Bekliyor</span></span>';
-            }
-            if (ch.status === 'PENDING_TYPESETTING') return '<span class="text-purple-400 font-bold">Dizgi Bekliyor</span>';
-            if (ch.status === 'PENDING_PUBLISHING') return '<span class="text-rose-400 font-bold">Yayın Kontrolü Bekliyor</span>';
-            if (ch.status === 'PUBLISHED') return '<span class="text-emerald-500 font-black">Yayınlandı</span>';
-            return '<span class="text-slate-500">' + ch.status + '</span>';
-        }
-
         function renderUI() {
             const myRoles = me.roles.split(',');
             const isCtrl = myRoles.includes('Controller');
@@ -599,7 +600,6 @@
                     else if (task === 'PROOFREADING') { currentAssigneeId = ch.proofreader_id; currentAssigneeName = ch.proofreader_name; }
                     else { currentAssigneeId = ch.assigned_to; currentAssigneeName = ch.assignee_name; }
 
-                    // FİX: Sidebar'a SADECE Yöneticinin KENDİ ÜSTLENDİĞİ (Görevi Al dediği) işler düşecek
                     if (currentAssigneeId === me.id) {
                         sidebar.appendChild(createSidebarCard(ch, task, currentAssigneeId));
                     }
