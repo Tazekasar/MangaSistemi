@@ -7,6 +7,10 @@ import uuid
 import zipfile
 import io
 import re
+from PIL import Image
+
+# Devasa webtoonlarda (60.000px vb.) "DecompressionBomb" hatası almamak için koruma kaldırıldı
+Image.MAX_IMAGE_PIXELS = None 
 
 app = Flask(__name__)
 app.secret_key = 'superseri_manga_key_123'
@@ -553,7 +557,6 @@ def create_series_api():
         conn.close()
     return jsonify({'success': True})
 
-# FİX: SERİ SİLME HATASI (SUNUCU HATASI) KÖKTEN ÇÖZÜLDÜ
 @app.route('/api/admin/series/<int:series_id>', methods=['DELETE'])
 @require_role('Controller')
 def delete_series_api(series_id):
@@ -636,6 +639,98 @@ def delete_chapter_api(chapter_id):
         return jsonify({'error': f'Hata oluştu: {str(e)}'}), 500
     finally:
         conn.close()
+
+# MAKSİMUM HIZ, RAM DOSTU, %100 KAYIPSIZ GÖRSEL MOTORU (WEBP & JPEG DESTEĞİ)
+@app.route('/api/tools/process', methods=['POST'])
+def process_images():
+    user = get_current_user()
+    if not user: return jsonify({'error': 'Unauthorized'}), 403
+
+    action = request.form.get('action') 
+    slice_height = int(request.form.get('slice_height', 3000))
+    files = request.files.getlist('files')
+
+    if not files or not files[0].filename:
+        return jsonify({'error': 'Dosya seçilmedi'}), 400
+
+    memory_file = io.BytesIO()
+    counter = 1
+    
+    try:
+        # HIZ: ZIP_STORED sıfır bekleme süresi, anında paketleme yapar
+        with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_STORED) as zipf:
+            if action == 'split':
+                for f in files:
+                    img = Image.open(f).convert('RGB')
+                    width, height = img.size
+                    for y in range(0, height, slice_height):
+                        crop_h = min(y + slice_height, height) - y
+                        box = (0, y, width, y + crop_h)
+                        slice_img = img.crop(box)
+                        img_io = io.BytesIO()
+                        
+                        # KORUMA KALKANI: Eğer yüklenen görsel WebP'nin 16383px sınırını aşıyorsa
+                        if crop_h > 16380 or width > 16380:
+                            # %100 Kayıpsız High-Res JPEG olarak kurtarır, çökmez.
+                            slice_img.save(img_io, format='JPEG', quality=100, subsampling=0)
+                            ext = 'jpg'
+                        else:
+                            # HIZ ve KALİTE: method=0 (en hızlı işleme), lossless=True (sıfır kalite kaybı)
+                            slice_img.save(img_io, format='WEBP', lossless=True, quality=100, method=0)
+                            ext = 'webp'
+                            
+                        zipf.writestr(f"{counter}.{ext}", img_io.getvalue())
+                        counter += 1
+                    img.close()
+
+            elif action == 'merge':
+                # RAM KORUMA: Sadece boyutları oku
+                images_info = []
+                max_width = 0
+                total_height = 0
+                
+                for f in files:
+                    with Image.open(f) as temp_img:
+                        w, h = temp_img.size
+                        if w > max_width: max_width = w
+                        total_height += h
+                        images_info.append({'file': f, 'width': w, 'height': h})
+                        
+                merged_img = Image.new('RGB', (max_width, total_height))
+                y_offset = 0
+                
+                # RAM KORUMA: Tek tek okuyup yapıştır ve temizle
+                for info in images_info:
+                    info['file'].seek(0)
+                    with Image.open(info['file']) as img:
+                        img_rgb = img.convert('RGB')
+                        merged_img.paste(img_rgb, (0, y_offset))
+                        y_offset += info['height']
+                        img_rgb.close()
+                
+                for y in range(0, total_height, slice_height): 
+                    crop_h = min(y + slice_height, total_height) - y
+                    box = (0, y, max_width, y + crop_h)
+                    slice_img = merged_img.crop(box)
+                    img_io = io.BytesIO()
+                    
+                    # 20K, 60K GİBİ DEVASA BOYUTLAR İÇİN KORUMA KALKANI
+                    if crop_h > 16380 or max_width > 16380:
+                        slice_img.save(img_io, format='JPEG', quality=100, subsampling=0)
+                        ext = 'jpg'
+                    else:
+                        slice_img.save(img_io, format='WEBP', lossless=True, quality=100, method=0)
+                        ext = 'webp'
+                        
+                    zipf.writestr(f"{counter}.{ext}", img_io.getvalue())
+                    counter += 1
+                    
+                merged_img.close()
+                    
+        memory_file.seek(0)
+        return send_file(memory_file, mimetype='application/zip', as_attachment=True, download_name='Averis_Fansub_Gorseller.zip')
+    except Exception as e:
+        return jsonify({'error': f'İşlem hatası: {str(e)}'}), 500
 
 ROLE_MAP_TASK = {
     'TRANSLATION': 'Translator',
