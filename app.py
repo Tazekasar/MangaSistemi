@@ -9,7 +9,6 @@ import io
 import re
 from PIL import Image
 
-# Devasa webtoonlarda (60.000px vb.) "DecompressionBomb" hatası almamak için koruma kaldırıldı
 Image.MAX_IMAGE_PIXELS = None 
 
 app = Flask(__name__)
@@ -640,7 +639,7 @@ def delete_chapter_api(chapter_id):
     finally:
         conn.close()
 
-# MAKSİMUM HIZ, RAM DOSTU, %100 KAYIPSIZ GÖRSEL MOTORU (WEBP & JPEG DESTEĞİ)
+# MAKSİMUM HIZ, SIFIR RAM TÜKETİMİ, AKILLI ŞERİT (STREAMING) GÖRSEL MOTORU
 @app.route('/api/tools/process', methods=['POST'])
 def process_images():
     user = get_current_user()
@@ -657,75 +656,93 @@ def process_images():
     counter = 1
     
     try:
-        # HIZ: ZIP_STORED sıfır bekleme süresi, anında paketleme yapar
         with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_STORED) as zipf:
             if action == 'split':
                 for f in files:
-                    img = Image.open(f).convert('RGB')
-                    width, height = img.size
-                    for y in range(0, height, slice_height):
-                        crop_h = min(y + slice_height, height) - y
-                        box = (0, y, width, y + crop_h)
-                        slice_img = img.crop(box)
-                        img_io = io.BytesIO()
-                        
-                        # KORUMA KALKANI: Eğer yüklenen görsel WebP'nin 16383px sınırını aşıyorsa
-                        if crop_h > 16380 or width > 16380:
-                            # %100 Kayıpsız High-Res JPEG olarak kurtarır, çökmez.
-                            slice_img.save(img_io, format='JPEG', quality=100, subsampling=0)
-                            ext = 'jpg'
-                        else:
-                            # HIZ ve KALİTE: method=0 (en hızlı işleme), lossless=True (sıfır kalite kaybı)
-                            slice_img.save(img_io, format='WEBP', lossless=True, quality=100, method=0)
-                            ext = 'webp'
+                    with Image.open(f) as img:
+                        img_rgb = img.convert('RGB')
+                        width, height = img_rgb.size
+                        for y in range(0, height, slice_height):
+                            crop_h = min(y + slice_height, height) - y
+                            box = (0, y, width, y + crop_h)
+                            slice_img = img_rgb.crop(box)
+                            img_io = io.BytesIO()
                             
-                        zipf.writestr(f"{counter}.{ext}", img_io.getvalue())
-                        counter += 1
-                    img.close()
+                            if crop_h > 16380 or width > 16380:
+                                slice_img.save(img_io, format='JPEG', quality=100, subsampling=0)
+                                ext = 'jpg'
+                            else:
+                                slice_img.save(img_io, format='WEBP', lossless=True, quality=100, method=0)
+                                ext = 'webp'
+                                
+                            zipf.writestr(f"{counter}.{ext}", img_io.getvalue())
+                            counter += 1
+                            slice_img.close()
+                        img_rgb.close()
 
             elif action == 'merge':
-                # RAM KORUMA: Sadece boyutları oku
-                images_info = []
+                # RAM Koruma 1: Sadece boyutları hızlıca hesapla (Tuval açma!)
                 max_width = 0
-                total_height = 0
-                
                 for f in files:
                     with Image.open(f) as temp_img:
-                        w, h = temp_img.size
-                        if w > max_width: max_width = w
-                        total_height += h
-                        images_info.append({'file': f, 'width': w, 'height': h})
-                        
-                merged_img = Image.new('RGB', (max_width, total_height))
-                y_offset = 0
+                        if temp_img.size[0] > max_width: 
+                            max_width = temp_img.size[0]
                 
-                # RAM KORUMA: Tek tek okuyup yapıştır ve temizle
-                for info in images_info:
-                    info['file'].seek(0)
-                    with Image.open(info['file']) as img:
+                # RAM Koruma 2: Sadece o anki şerit kadar (Örn: 60.000px) tuval aç
+                current_canvas = Image.new('RGB', (max_width, slice_height))
+                current_y = 0
+                
+                for f in files:
+                    f.seek(0)
+                    with Image.open(f) as img:
                         img_rgb = img.convert('RGB')
-                        merged_img.paste(img_rgb, (0, y_offset))
-                        y_offset += info['height']
+                        src_w, src_h = img_rgb.size
+                        src_y = 0
+                        
+                        while src_y < src_h:
+                            space_left = slice_height - current_y
+                            take_h = min(src_h - src_y, space_left)
+                            
+                            part = img_rgb.crop((0, src_y, src_w, src_y + take_h))
+                            current_canvas.paste(part, (0, current_y))
+                            part.close()
+                            
+                            current_y += take_h
+                            src_y += take_h
+                            
+                            # O anki şerit dolduysa ZIP'e at, RAM'i temizle, yeni şerit aç
+                            if current_y >= slice_height:
+                                img_io = io.BytesIO()
+                                if slice_height > 16380 or max_width > 16380:
+                                    current_canvas.save(img_io, format='JPEG', quality=100, subsampling=0)
+                                    ext = 'jpg'
+                                else:
+                                    current_canvas.save(img_io, format='WEBP', lossless=True, quality=100, method=0)
+                                    ext = 'webp'
+                                    
+                                zipf.writestr(f"{counter}.{ext}", img_io.getvalue())
+                                counter += 1
+                                
+                                current_canvas.close()
+                                current_canvas = Image.new('RGB', (max_width, slice_height))
+                                current_y = 0
                         img_rgb.close()
-                
-                for y in range(0, total_height, slice_height): 
-                    crop_h = min(y + slice_height, total_height) - y
-                    box = (0, y, max_width, y + crop_h)
-                    slice_img = merged_img.crop(box)
+
+                # Döngü bitince en son yarım kalan (boşluklu) şerit varsa sadece dolu yeri kesip kaydet
+                if current_y > 0:
+                    final_canvas = current_canvas.crop((0, 0, max_width, current_y))
                     img_io = io.BytesIO()
-                    
-                    # 20K, 60K GİBİ DEVASA BOYUTLAR İÇİN KORUMA KALKANI
-                    if crop_h > 16380 or max_width > 16380:
-                        slice_img.save(img_io, format='JPEG', quality=100, subsampling=0)
+                    if current_y > 16380 or max_width > 16380:
+                        final_canvas.save(img_io, format='JPEG', quality=100, subsampling=0)
                         ext = 'jpg'
                     else:
-                        slice_img.save(img_io, format='WEBP', lossless=True, quality=100, method=0)
+                        final_canvas.save(img_io, format='WEBP', lossless=True, quality=100, method=0)
                         ext = 'webp'
-                        
                     zipf.writestr(f"{counter}.{ext}", img_io.getvalue())
                     counter += 1
+                    final_canvas.close()
                     
-                merged_img.close()
+                current_canvas.close()
                     
         memory_file.seek(0)
         return send_file(memory_file, mimetype='application/zip', as_attachment=True, download_name='Averis_Fansub_Gorseller.zip')
