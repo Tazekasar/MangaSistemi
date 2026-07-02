@@ -28,6 +28,7 @@
         @media (max-width: 767px) {
             input, select, textarea { font-size: 16px !important; }
             
+            /* İKİLİ KÜÇÜK GÖRÜNÜM (Mevcut, sıkışık olan) */
             body.mobile-double .lane-container { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
             body.mobile-double .kanban-lane { padding: 0.5rem; }
             body.mobile-double .handdrawn-border { padding: 0.5rem; flex-direction: column; gap: 0.4rem; }
@@ -40,6 +41,21 @@
             body.mobile-double .mt-2.border-t { margin-top: 0.25rem; padding-top: 0.4rem; }
             body.mobile-double button, body.mobile-double label { font-size: 0.6rem; padding: 4px; }
             body.mobile-double .pr-10 { padding-right: 0; }
+
+            /* 🎯 YENİ: İKİLİ MEDIUM (ORTA) GÖRÜNÜM (Kart şeklindeki yeni tasarım) */
+            body.mobile-double-medium .lane-container { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+            body.mobile-double-medium .kanban-lane { padding: 0.5rem; }
+            body.mobile-double-medium .handdrawn-border { padding: 0.75rem; flex-direction: column; gap: 0.5rem; align-items: center; text-align: center; }
+            body.mobile-double-medium .flex.gap-4.items-center { flex-direction: column; gap: 0.5rem; width: 100%; justify-content: center; }
+            body.mobile-double-medium .w-16.h-24 { width: 100%; height: 140px; border-radius: 0.5rem; }
+            body.mobile-double-medium h4 { font-size: 0.9rem; margin-top: 0.25rem; white-space: normal; line-height: 1.2; }
+            body.mobile-double-medium p { font-size: 0.75rem; }
+            body.mobile-double-medium .text-\\[10px\\] { font-size: 0.65rem; }
+            body.mobile-double-medium .text-xs { font-size: 0.75rem; }
+            body.mobile-double-medium .min-w-0.flex-1 { display: flex; flex-direction: column; align-items: center; width: 100%; }
+            body.mobile-double-medium .mt-2.border-t { width: 100%; margin-top: 0.5rem; padding-top: 0.5rem; justify-content: center; }
+            body.mobile-double-medium button, body.mobile-double-medium label { font-size: 0.7rem; padding: 0.5rem; }
+            body.mobile-double-medium .pr-10 { padding-right: 0; }
         }
     </style>
 </head>
@@ -122,8 +138,7 @@
                             🙈 Doluları Gizle
                         </button>
                         <button onclick="toggleMobileLayout()" id="mobile-layout-btn" class="md:hidden bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-3 py-2 rounded-lg border border-slate-700 flex items-center gap-2 active:scale-95 transition-all shadow-md">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg> Tekli Görünüm
-                        </button>
+                            </button>
                     </div>
 
                     <div id="lane-PENDING_TRANSLATION" class="kanban-lane bg-slate-900/40 p-4 md:p-5 rounded-xl border border-slate-800/80 hidden transition-all duration-300">
@@ -174,7 +189,7 @@
                         <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 space-y-4 shadow-md">
                             <h3 class="text-sm font-bold text-indigo-400 uppercase">1. Yeni Seri Ekle</h3>
                             <input type="text" id="new-series-title" placeholder="Seri Başlığı" class="w-full bg-slate-900 text-sm rounded-lg p-3 text-white border border-slate-700">
-                            <input type="file" id="new-series-cover" class="w-full text-sm text-slate-300 bg-slate-900 p-2 rounded-lg border border-slate-700" accept=".png,.jpg,.jpeg,.webp">
+                            <input type="file" id="new-series-cover" class="w-full text-sm text-slate-300 bg-slate-900 p-2 rounded-lg border border-slate-700" accept=".png,.jpg,.jpeg,.webp,.heic,.heif">
                             <button onclick="createSeries()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-lg active:scale-95 transition-transform">Seriyi Kaydet</button>
                         </div>
                         <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 space-y-4 shadow-md">
@@ -259,7 +274,7 @@
                             <div id="profile-edit-avatar" class="w-28 h-28 md:w-32 md:h-32 rounded-full border-4 border-indigo-500/50 mb-5 bg-cover bg-center shadow-lg bg-slate-800 flex items-center justify-center text-xs text-slate-500 overflow-hidden"></div>
                             <div class="flex flex-col sm:flex-row gap-3 w-full justify-center">
                                 <label id="lbl-select-photo" class="cursor-pointer bg-indigo-600 hover:bg-indigo-500 text-white text-sm px-5 py-3 rounded-lg font-bold transition-colors w-full sm:w-auto text-center active:scale-95">📷 Fotoğraf Seç
-                                    <input type="file" id="profile-file" accept=".png,.jpg,.jpeg,.webp" class="hidden" onchange="previewAvatar(event)">
+                                    <input type="file" id="profile-file" accept=".png,.jpg,.jpeg,.webp,.heic,.heif" class="hidden" onchange="previewAvatar(event)">
                                 </label>
                                 <button id="btn-delete-avatar" onclick="deleteAvatar()" class="hidden bg-rose-700 hover:bg-rose-600 text-white text-sm px-5 py-3 rounded-lg font-bold transition-colors w-full sm:w-auto active:scale-95">🗑️ Resmi Sil</button>
                             </div>
@@ -328,18 +343,39 @@
         const DEFAULT_AVATAR = "/profiles/profil.png"; 
         function getAvatarUrl(filename) { return (filename ? `/profiles/${filename}` : DEFAULT_AVATAR) + "?v=" + avatarCacheBuster; }
         function toggleHideAssigned() { hideAssigned = !hideAssigned; localStorage.setItem('hideAssigned', hideAssigned); renderUI(); }
+        
+        // 🎯 YENİ: 3'LÜ DÖNGÜ (TEKLİ -> ORTA İKİLİ -> KÜÇÜK İKİLİ) 
         function toggleMobileLayout(forceValue = null) {
             const btn = document.getElementById('mobile-layout-btn');
-            if (forceValue === 'double' || (!forceValue && !document.body.classList.contains('mobile-double'))) {
+            let current = localStorage.getItem('mobileLayout') || 'single';
+
+            if (forceValue) {
+                current = forceValue;
+            } else {
+                if (current === 'single') current = 'double-medium';
+                else if (current === 'double-medium') current = 'double';
+                else current = 'single';
+            }
+
+            document.body.classList.remove('mobile-double', 'mobile-double-medium');
+            
+            const gridIcon = `<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>`;
+            const listIcon = `<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>`;
+
+            if (current === 'double-medium') {
+                document.body.classList.add('mobile-double-medium');
+                btn.innerHTML = `${gridIcon} İkili (Küçük)`;
+                localStorage.setItem('mobileLayout', 'double-medium');
+            } else if (current === 'double') {
                 document.body.classList.add('mobile-double');
-                btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg> Tekli Görünüm`;
+                btn.innerHTML = `${listIcon} Tekli Görünüm`;
                 localStorage.setItem('mobileLayout', 'double');
             } else {
-                document.body.classList.remove('mobile-double');
-                btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg> İkili Görünüm`;
+                btn.innerHTML = `${gridIcon} İkili (Orta)`;
                 localStorage.setItem('mobileLayout', 'single');
             }
         }
+
         function toggleLane(stage) {
             const container = document.getElementById(`container-${stage}`);
             const arrow = document.getElementById(`arrow-${stage}`);
@@ -408,7 +444,13 @@
                 document.getElementById('header-avatar').style.backgroundImage = `url('${avatarUrl}')`;
                 document.getElementById('profile-edit-avatar').style.backgroundImage = `url('${avatarUrl}')`;
                 document.getElementById('profile-name').value = me.username;
-                if(localStorage.getItem('mobileLayout') === 'double') toggleMobileLayout('double'); else toggleMobileLayout('single');
+                
+                // Kaldığı yerden (hangi view'da ise) başlatma
+                const layout = localStorage.getItem('mobileLayout');
+                if(layout === 'double') toggleMobileLayout('double'); 
+                else if(layout === 'double-medium') toggleMobileLayout('double-medium');
+                else toggleMobileLayout('single');
+                
                 loadData();
             } else {
                 document.getElementById('login-view').classList.remove('hidden');
@@ -535,7 +577,7 @@
 
                         let cardBgClass = 'bg-slate-900 border-slate-700';
                         if (task === 'TRANSLATION') cardBgClass = 'bg-amber-950/40 border-amber-800/80'; 
-                        else if (task === 'CLEANING') cardBgClass = 'bg-teal-950/40 border-teal-800/80'; 
+                        else if (task === 'CLEANING') cardBgClass = 'bg-[#183d33]/80 border-[#23594b]/80'; 
                         else if (task === 'PROOFREADING') cardBgClass = 'bg-blue-950/40 border-blue-800/80'; 
                         else if (task === 'TYPESETTING') cardBgClass = 'bg-purple-950/40 border-purple-800/80'; 
                         else if (task === 'PUBLISHING') cardBgClass = 'bg-rose-950/40 border-rose-800/80'; 
@@ -562,7 +604,7 @@
         function createSidebarCard(ch, task, assigneeId) {
             let sbBgClass = 'bg-slate-800 border-slate-700';
             if (task === 'TRANSLATION') sbBgClass = 'bg-amber-950/30 border-amber-900/60'; 
-            else if (task === 'CLEANING') sbBgClass = 'bg-teal-950/30 border-teal-900/60'; 
+            else if (task === 'CLEANING') sbBgClass = 'bg-[#183d33]/60 border-[#23594b]/60'; 
             else if (task === 'PROOFREADING') sbBgClass = 'bg-blue-950/30 border-blue-900/60'; 
             else if (task === 'TYPESETTING') sbBgClass = 'bg-purple-950/30 border-purple-900/60'; 
             else if (task === 'PUBLISHING') sbBgClass = 'bg-rose-950/30 border-rose-900/60';
@@ -609,9 +651,13 @@
 
             const releaseBtn = `<button onclick="releaseChapter(${ch.id}, '${task}')" class="absolute top-3 right-3 text-[10px] font-bold text-rose-300 hover:text-white bg-rose-950 hover:bg-rose-700 px-3 py-1.5 rounded-lg transition-colors border border-rose-800/50 shadow-sm z-10">❌ Bırak</button>`;
 
+            // 🎯 YENİ: UPLOAD ACCEPT ÖZELLİĞİNE HEIC/HEIF EKLENDİ
+            let uploadAccept = '.png,.jpg,.jpeg,.webp,.heic,.heif';
+            if(task === 'TRANSLATION' || task === 'PROOFREADING') uploadAccept = '.txt,.doc,.docx';
+
             let actionBtn = `
                 <div class="flex gap-2 items-center mt-2">
-                    <input type="file" id="fi-${ch.id}-${task}" multiple class="hidden" onchange="uploadMultipleFiles(${ch.id}, '${task}')">
+                    <input type="file" id="fi-${ch.id}-${task}" accept="${uploadAccept}" multiple class="hidden" onchange="uploadMultipleFiles(${ch.id}, '${task}')">
                     <label id="upload-label-${ch.id}-${task}" for="fi-${ch.id}-${task}" class="relative overflow-hidden bg-slate-700 hover:bg-slate-600 text-xs px-2 py-2.5 rounded-lg text-center flex-1 cursor-pointer transition-colors shadow-sm">
                         <div id="prog-up-${ch.id}-${task}" class="progress-bar-bg absolute top-0 left-0 h-full bg-emerald-600/80" style="width:0%"></div>
                         <span id="text-up-${ch.id}-${task}" class="relative z-10 text-white font-bold">📎 Yükle</span>
@@ -664,7 +710,8 @@
             const files = input.files;
             if (!files.length) return;
 
-            let allowedExt = ['png', 'jpg', 'jpeg', 'webp'];
+            // 🎯 YENİ: HEIC VE HEIF UZANTILARI İÇİN İZİN LİSTESİ GÜNCELLENDİ
+            let allowedExt = ['png', 'jpg', 'jpeg', 'webp', 'heic', 'heif'];
             if (task === 'TRANSLATION' || task === 'PROOFREADING') {
                 allowedExt = ['txt', 'doc', 'docx'];
             }
@@ -672,7 +719,7 @@
             for(let i = 0; i < files.length; i++) {
                 const ext = files[i].name.split('.').pop().toLowerCase();
                 if (!allowedExt.includes(ext)) {
-                    alert(`🚨 HATA: Yüklemeye çalıştığınız dosyanın türü yanlış!\n\n${task === 'TRANSLATION' || task === 'PROOFREADING' ? 'Çevirmen ve Redaktörler sadece Metin (.txt, .doc, .docx)' : 'Temizlikçi ve Dizgiciler sadece Resim (.jpg, .png, .webp)'} yükleyebilir.`);
+                    alert(`🚨 HATA: Yüklemeye çalıştığınız dosyanın türü yanlış!\n\n${task === 'TRANSLATION' || task === 'PROOFREADING' ? 'Çevirmen ve Redaktörler sadece Metin (.txt, .doc, .docx)' : 'Temizlikçi ve Dizgiciler sadece Resim (.jpg, .png, .webp, .heic, .heif)'} yükleyebilir.`);
                     input.value = '';
                     return; 
                 }
