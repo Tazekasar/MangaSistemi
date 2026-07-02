@@ -470,10 +470,10 @@ def download_chapter_files(chapter_id, stage):
                 zipf.write(filepath, archive_name)
     
     stage_tr_map = {
-        'PENDING_TRANSLATION': 'Çeviri_Bekliyor',
+        'PENDING_TRANSLATION': 'Çeviri_Metni',
         'PENDING_CLEANING': 'Temiz_Sayfalar',
-        'PENDING_PROOFREADING': 'Redakte_Edilmis',
-        'PENDING_TYPESETTING': 'Dizgi_Tamamlanmis',
+        'PENDING_PROOFREADING': 'Redakte_Metni',
+        'PENDING_TYPESETTING': 'Dizgilenmis_Sayfalar',
         'PUBLISHED': 'Yayin_Kopyasi',
         'ALL': 'Tum_Gecmis'
     }
