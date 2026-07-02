@@ -10,26 +10,22 @@
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
     <style>
         body { font-family: 'Urbanist', sans-serif; background-color: #0f172a; color: #e2e8f0; -webkit-tap-highlight-color: transparent; }
         .handdrawn-border { border: 2px solid #334155; box-shadow: 3px 3px 0px #1e293b; }
-        
         .lane-container { -webkit-overflow-scrolling: touch; padding-bottom: 12px; }
         .lane-container::-webkit-scrollbar { height: 4px; }
         .lane-container::-webkit-scrollbar-thumb { background-color: #475569; border-radius: 4px; }
-        
         .nav-btn.active { color: #818cf8; border-bottom: 2px solid #818cf8; }
-        .stats-item { border-bottom: 1px solid rgba(51, 65, 85, 0.5); }
-        .stats-item:last-child { border-bottom: none; }
-        
         .fade-in { animation: fadeIn 0.2s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* Animasyonlu Progress Bar (İlerleme Çubuğu) */
+        .progress-bar-bg { transition: width 0.3s ease-out; }
 
         @media (max-width: 767px) {
-            body.mobile-double .lane-container {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                gap: 0.5rem;
-            }
+            body.mobile-double .lane-container { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
             body.mobile-double .kanban-lane { padding: 0.75rem; }
             body.mobile-double .handdrawn-border { padding: 0.5rem; }
             body.mobile-double .lane-container .flex.gap-4.items-center { flex-direction: column; gap: 0.5rem; text-align: center; }
@@ -55,7 +51,7 @@
     </div>
 
     <div id="main-view" class="h-full flex flex-col hidden relative fade-in">
-        <header class="bg-slate-900 border-b-2 border-slate-800 px-4 md:px-6 py-3 md:py-4 flex justify-between items-center shrink-0 safe-area-pt z-50">
+        <header class="bg-slate-900 border-b-2 border-slate-800 px-4 md:px-6 py-3 md:py-4 flex justify-between items-center shrink-0 z-50">
             <div class="flex items-center gap-3 md:gap-6">
                 <button onclick="toggleMobileSidebar()" class="md:hidden text-slate-400 hover:text-white focus:outline-none p-1 -ml-1 z-50 relative">
                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
@@ -77,10 +73,9 @@
             </div>
         </header>
 
-        <div id="mobile-nav" class="md:hidden flex justify-start gap-1 bg-slate-900 border-b border-slate-800 p-2 shrink-0 text-xs font-bold text-slate-400 overflow-x-auto safe-area-pb hide-scrollbar px-3 z-40 relative"></div>
+        <div id="mobile-nav" class="md:hidden flex justify-start gap-1 bg-slate-900 border-b border-slate-800 p-2 shrink-0 text-xs font-bold text-slate-400 overflow-x-auto hide-scrollbar px-3 z-40 relative"></div>
 
         <div class="flex flex-1 overflow-hidden relative w-full">
-            
             <div id="mobile-overlay" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-30 hidden transition-opacity md:hidden"></div>
             
             <aside id="main-sidebar" class="fixed inset-y-0 left-0 z-40 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 w-[85%] max-w-[320px] md:w-[340px] bg-slate-900 border-r border-slate-800 p-4 flex flex-col shrink-0 overflow-y-auto shadow-2xl md:shadow-none h-full">
@@ -114,63 +109,49 @@
             </aside>
 
             <div class="flex-1 relative overflow-hidden bg-slate-950 w-full flex flex-col">
+                
                 <main id="view-kanban" class="view-section flex-1 p-4 md:p-6 space-y-6 overflow-y-auto w-full pb-24 md:pb-6 relative">
                     <div class="flex justify-end gap-2 mb-3 px-1 w-full border-b border-slate-800/50 pb-3">
                         <button onclick="toggleHideAssigned()" id="hide-assigned-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-3 py-2 rounded-lg border border-slate-700 flex items-center gap-2 active:scale-95 transition-all shadow-md">
                             🙈 Doluları Gizle
                         </button>
                         <button onclick="toggleMobileLayout()" id="mobile-layout-btn" class="md:hidden bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-3 py-2 rounded-lg border border-slate-700 flex items-center gap-2 active:scale-95 transition-all shadow-md">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                            Tekli Görünüm
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg> Tekli Görünüm
                         </button>
                     </div>
 
                     <div id="lane-PENDING_TRANSLATION" class="kanban-lane bg-slate-900/40 p-4 md:p-5 rounded-xl border border-slate-800/80 hidden transition-all duration-300">
                         <div onclick="toggleLane('PENDING_TRANSLATION')" class="cursor-pointer flex items-center gap-3 mb-2 select-none group border-b border-slate-800/50 pb-3">
-                            <div class="bg-slate-800 group-hover:bg-slate-700 p-1.5 rounded-lg transition-colors">
-                                <svg id="arrow-PENDING_TRANSLATION" class="w-5 h-5 text-amber-400 transform transition-transform duration-300 rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
-                            </div>
-                            <h3 class="text-base font-bold text-amber-400 tracking-wider uppercase group-hover:text-amber-300 transition-colors">1. ÇEVİRİ BEKLEYEN</h3>
+                            <div class="bg-slate-800 p-1.5 rounded-lg"><svg id="arrow-PENDING_TRANSLATION" class="w-5 h-5 text-amber-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg></div>
+                            <h3 class="text-base font-bold text-amber-400 uppercase">1. ÇEVİRİ BEKLEYEN</h3>
                         </div>
                         <div id="container-PENDING_TRANSLATION" class="lane-container grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 mt-4 transition-all duration-300"></div>
                     </div>
-                    
                     <div id="lane-PENDING_CLEANING" class="kanban-lane bg-slate-900/40 p-4 md:p-5 rounded-xl border border-slate-800/80 hidden transition-all duration-300">
                         <div onclick="toggleLane('PENDING_CLEANING')" class="cursor-pointer flex items-center gap-3 mb-2 select-none group border-b border-slate-800/50 pb-3">
-                            <div class="bg-slate-800 group-hover:bg-slate-700 p-1.5 rounded-lg transition-colors">
-                                <svg id="arrow-PENDING_CLEANING" class="w-5 h-5 text-teal-400 transform transition-transform duration-300 rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
-                            </div>
-                            <h3 class="text-base font-bold text-teal-400 tracking-wider uppercase group-hover:text-teal-300 transition-colors">2. TEMİZLİK BEKLEYEN</h3>
+                            <div class="bg-slate-800 p-1.5 rounded-lg"><svg id="arrow-PENDING_CLEANING" class="w-5 h-5 text-teal-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg></div>
+                            <h3 class="text-base font-bold text-teal-400 uppercase">2. TEMİZLİK BEKLEYEN</h3>
                         </div>
                         <div id="container-PENDING_CLEANING" class="lane-container grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 mt-4 transition-all duration-300"></div>
                     </div>
-
                     <div id="lane-PENDING_PROOFREADING" class="kanban-lane bg-slate-900/40 p-4 md:p-5 rounded-xl border border-slate-800/80 hidden transition-all duration-300">
                         <div onclick="toggleLane('PENDING_PROOFREADING')" class="cursor-pointer flex items-center gap-3 mb-2 select-none group border-b border-slate-800/50 pb-3">
-                            <div class="bg-slate-800 group-hover:bg-slate-700 p-1.5 rounded-lg transition-colors">
-                                <svg id="arrow-PENDING_PROOFREADING" class="w-5 h-5 text-blue-400 transform transition-transform duration-300 rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
-                            </div>
-                            <h3 class="text-base font-bold text-blue-400 tracking-wider uppercase group-hover:text-blue-300 transition-colors">3. REDAKTE BEKLEYEN</h3>
+                            <div class="bg-slate-800 p-1.5 rounded-lg"><svg id="arrow-PENDING_PROOFREADING" class="w-5 h-5 text-blue-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg></div>
+                            <h3 class="text-base font-bold text-blue-400 uppercase">3. REDAKTE BEKLEYEN</h3>
                         </div>
                         <div id="container-PENDING_PROOFREADING" class="lane-container grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 mt-4 transition-all duration-300"></div>
                     </div>
-
                     <div id="lane-PENDING_TYPESETTING" class="kanban-lane bg-slate-900/40 p-4 md:p-5 rounded-xl border border-slate-800/80 hidden transition-all duration-300">
                         <div onclick="toggleLane('PENDING_TYPESETTING')" class="cursor-pointer flex items-center gap-3 mb-2 select-none group border-b border-slate-800/50 pb-3">
-                            <div class="bg-slate-800 group-hover:bg-slate-700 p-1.5 rounded-lg transition-colors">
-                                <svg id="arrow-PENDING_TYPESETTING" class="w-5 h-5 text-purple-400 transform transition-transform duration-300 rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
-                            </div>
-                            <h3 class="text-base font-bold text-purple-400 tracking-wider uppercase group-hover:text-purple-300 transition-colors">4. DİZGİ BEKLEYEN</h3>
+                            <div class="bg-slate-800 p-1.5 rounded-lg"><svg id="arrow-PENDING_TYPESETTING" class="w-5 h-5 text-purple-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg></div>
+                            <h3 class="text-base font-bold text-purple-400 uppercase">4. DİZGİ BEKLEYEN</h3>
                         </div>
                         <div id="container-PENDING_TYPESETTING" class="lane-container grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 mt-4 transition-all duration-300"></div>
                     </div>
-
                     <div id="lane-PENDING_PUBLISHING" class="kanban-lane bg-rose-950/20 p-4 md:p-5 rounded-xl border border-rose-900/50 hidden transition-all duration-300">
                         <div onclick="toggleLane('PENDING_PUBLISHING')" class="cursor-pointer flex items-center gap-3 mb-2 select-none group border-b border-rose-900/50 pb-3">
-                            <div class="bg-rose-900 group-hover:bg-rose-800 p-1.5 rounded-lg transition-colors">
-                                <svg id="arrow-PENDING_PUBLISHING" class="w-5 h-5 text-rose-300 transform transition-transform duration-300 rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
-                            </div>
-                            <h3 class="text-base font-bold text-rose-400 tracking-wider uppercase group-hover:text-rose-300 transition-colors">5. YAYINLANMA (KONTROL) BEKLEYEN</h3>
+                            <div class="bg-rose-900 p-1.5 rounded-lg"><svg id="arrow-PENDING_PUBLISHING" class="w-5 h-5 text-rose-300 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg></div>
+                            <h3 class="text-base font-bold text-rose-400 uppercase">5. YAYINLANMA BEKLEYEN</h3>
                         </div>
                         <div id="container-PENDING_PUBLISHING" class="lane-container grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 mt-4 transition-all duration-300"></div>
                     </div>
@@ -199,15 +180,15 @@
                         </div>
                     </div>
                     <div class="bg-slate-800 p-4 md:p-6 rounded-xl border border-slate-700 shadow-md">
-                        <h3 class="text-sm font-bold text-rose-400 uppercase mb-4 border-b border-slate-700 pb-2">Silme İşlemleri (Tüm Veritabanı)</h3>
+                        <h3 class="text-sm font-bold text-rose-400 uppercase mb-4 border-b border-slate-700 pb-2">Silme İşlemleri</h3>
                         <div id="admin-series-list" class="space-y-6"></div>
                     </div>
                 </div>
 
                 <div id="view-tools" class="view-section flex-1 p-4 md:p-8 overflow-y-auto hidden w-full pb-24 md:pb-8">
-                    <h2 class="text-xl md:text-2xl font-bold text-white mb-2">Görsel Boyutlandırma</h2>
-                    <p class="text-slate-400 text-sm mb-1">Görselleri dilediğiniz gibi boyutlandırın!</p>
-                    <p class="text-slate-500 text-xs font-semibold mb-6 border-b border-slate-700 pb-3">Not: Görseller eklenme sırasına göre sıralanır.</p>
+                    <h2 class="text-xl md:text-2xl font-bold text-emerald-400 mb-2">⚡ Turbo Görsel Boyutlandırma (JS Mimarisi)</h2>
+                    <p class="text-slate-400 text-sm mb-1">Görseller artık sunucuya yüklenmeden <b>doğrudan cihazınızın gücüyle (Tarayıcıda)</b> anında işleniyor. 10 kat daha hızlı, 0 çökme riski!</p>
+                    <p class="text-slate-500 text-xs font-semibold mb-6 border-b border-slate-700 pb-3">Not: Cihazınızın RAM'ini kullanır, işlemler saniyeler sürer.</p>
                     
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div class="bg-slate-900 p-5 md:p-6 rounded-xl border border-slate-700 shadow-xl flex flex-col gap-4">
@@ -228,7 +209,10 @@
                                 </select>
                             </label>
                             
-                            <button id="btn-split" onclick="processImages('split')" class="w-full bg-teal-600 hover:bg-teal-500 text-white font-bold py-3.5 rounded-lg mt-auto active:scale-95 transition-all shadow-md">Ayır ve İndir (ZIP)</button>
+                            <button id="btn-split" onclick="processImagesJS('split')" class="relative w-full bg-slate-800 border border-teal-700 overflow-hidden text-white font-bold py-3.5 rounded-lg mt-auto active:scale-95 transition-all shadow-md">
+                                <div id="progress-split" class="progress-bar-bg absolute top-0 left-0 h-full bg-teal-600" style="width: 0%;"></div>
+                                <span id="text-split" class="relative z-10 flex items-center justify-center gap-2">Ayır ve İndir (ZIP)</span>
+                            </button>
                         </div>
 
                         <div class="bg-slate-900 p-5 md:p-6 rounded-xl border border-slate-700 shadow-xl flex flex-col gap-4">
@@ -249,10 +233,13 @@
                                     <option value="45000">45.000 px</option>
                                     <option value="60000" selected>60.000 px</option>
                                 </select>
-                                <p class="text-[10px] text-slate-500 mt-1">Not: WebP sınırı 16.383px'dir. Bu devasa boyutlar seçildiğinde, sistem hata vermemek için kaliteyi zerre bozmadan otomatik JPG formatına döner.</p>
+                                <p class="text-[10px] text-slate-500 mt-1">Not: Telefon ve Tarayıcı bellek limitlerini aşmamak için 15.000 px veya 20.000 px kullanmanız tavsiye edilir.</p>
                             </label>
                             
-                            <button id="btn-merge" onclick="processImages('merge')" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-3.5 rounded-lg mt-auto active:scale-95 transition-all shadow-md">Birleştir ve İndir (ZIP)</button>
+                            <button id="btn-merge" onclick="processImagesJS('merge')" class="relative w-full bg-slate-800 border border-amber-700 overflow-hidden text-white font-bold py-3.5 rounded-lg mt-auto active:scale-95 transition-all shadow-md">
+                                <div id="progress-merge" class="progress-bar-bg absolute top-0 left-0 h-full bg-amber-600" style="width: 0%;"></div>
+                                <span id="text-merge" class="relative z-10 flex items-center justify-center gap-2">Birleştir ve İndir (ZIP)</span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -273,7 +260,6 @@
                             <div>
                                 <label class="block text-sm font-bold text-slate-400 mb-2">Görünür İsim (Kullanıcı Adı):</label>
                                 <input type="text" id="profile-name" class="w-full bg-slate-800 text-white rounded-lg p-4 border border-slate-700 outline-none focus:border-indigo-500 text-base">
-                                <p id="averis-p-info" class="text-xs text-amber-300 mt-2 hidden italic">Süper yönetici ismi kalıcıdır.</p>
                             </div>
                             <button id="profile-save-btn" onclick="saveProfile()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-lg transition-colors active:scale-95 text-lg shadow-md mt-4">Değişiklikleri Kaydet</button>
                         </div>
@@ -286,7 +272,7 @@
                             <h2 class="text-xl md:text-2xl font-bold text-white mb-2">🏆 Ekip Emek Panosu</h2>
                             <p class="text-slate-400 text-sm">Takım arkadaşlarının bitirdiği görev sayıları.</p>
                         </div>
-                        <button id="stats-sort-btn" onclick="toggleStatsSort()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-lg active:scale-95 transition-all shadow-md flex items-center justify-center gap-2">
+                        <button id="stats-sort-btn" onclick="toggleStatsSort()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-lg active:scale-95 transition-all shadow-md">
                             📊 Sıralama: En Çok Yapan
                         </button>
                     </div>
@@ -301,11 +287,9 @@
         let me = null;
         let gData = { chapters: [], users: [], series: [] };
         let gStats = [];
-        
         let avatarCacheBuster = new Date().getTime(); 
         let hideAssigned = localStorage.getItem('hideAssigned') === 'true';
         let currentSort = 'total'; 
-        
         const ROLE_MAP_TASK = { 'TRANSLATION': 'Translator', 'CLEANING': 'Cleaner', 'PROOFREADING': 'Proofreader', 'TYPESETTING': 'Typesetter', 'PUBLISHING': 'Controller' };
 
         const STAGE_LABELS = {
@@ -328,23 +312,14 @@
                 return '<span class="text-amber-500 font-bold">Çeviri Bitti, <span class="text-blue-400">Redakte</span> <span class="text-slate-400">&</span> <span class="text-teal-400">Temizlik Bekliyor</span></span>';
             }
             if (ch.status === 'PENDING_TYPESETTING') return '<span class="text-purple-400 font-bold">Dizgi Bekliyor</span>';
-            if (ch.status === 'PENDING_PUBLISHING') return '<span class="text-rose-400 font-bold">Yayın Kontrolü Bekliyor</span>';
+            if (ch.status === 'PENDING_PUBLISHING') return '<span class="text-rose-400 font-bold">Yayın Bekliyor</span>';
             if (ch.status === 'PUBLISHED') return '<span class="text-emerald-500 font-black">Yayınlandı</span>';
             return '<span class="text-slate-500">' + ch.status + '</span>';
         }
 
         const DEFAULT_AVATAR = "/profiles/profil.png"; 
-
-        function getAvatarUrl(filename) { 
-            return (filename ? `/profiles/${filename}` : DEFAULT_AVATAR) + "?v=" + avatarCacheBuster; 
-        }
-
-        function toggleHideAssigned() {
-            hideAssigned = !hideAssigned;
-            localStorage.setItem('hideAssigned', hideAssigned);
-            renderUI();
-        }
-
+        function getAvatarUrl(filename) { return (filename ? `/profiles/${filename}` : DEFAULT_AVATAR) + "?v=" + avatarCacheBuster; }
+        function toggleHideAssigned() { hideAssigned = !hideAssigned; localStorage.setItem('hideAssigned', hideAssigned); renderUI(); }
         function toggleMobileLayout(forceValue = null) {
             const btn = document.getElementById('mobile-layout-btn');
             if (forceValue === 'double' || (!forceValue && !document.body.classList.contains('mobile-double'))) {
@@ -357,19 +332,16 @@
                 localStorage.setItem('mobileLayout', 'single');
             }
         }
-
         function toggleLane(stage) {
             const container = document.getElementById(`container-${stage}`);
             const arrow = document.getElementById(`arrow-${stage}`);
             if (container.classList.contains('hidden')) { container.classList.remove('hidden'); arrow.classList.remove('-rotate-90'); } 
             else { container.classList.add('hidden'); arrow.classList.add('-rotate-90'); }
         }
-
         function toggleMobileSidebar() {
             document.getElementById('main-sidebar').classList.toggle('-translate-x-full');
             document.getElementById('mobile-overlay').classList.toggle('hidden');
         }
-
         function switchView(viewName) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
@@ -381,29 +353,11 @@
 
         function renderNavigation(roles) {
             const isCtrl = roles.includes('Controller');
-            const dNav = document.getElementById('desktop-nav');
-            const mNav = document.getElementById('mobile-nav');
+            const dNav = document.getElementById('desktop-nav'); const mNav = document.getElementById('mobile-nav');
             dNav.innerHTML = ''; mNav.innerHTML = '';
-
-            let menuItems = [];
-            if (isCtrl) {
-                menuItems = [
-                    { id: 'kanban', label: 'Ana Sistem' },
-                    { id: 'series', label: 'Seriler' },
-                    { id: 'profile', label: 'Profilim' },
-                    { id: 'stats', label: 'Ekip Emek' },
-                    { id: 'tools', label: 'Görsel Boyutlandırma' },
-                    { id: 'published', label: 'Yayınlananlar' }
-                ];
-            } else {
-                menuItems = [
-                    { id: 'kanban', label: 'Ana Sistem' },
-                    { id: 'profile', label: 'Profilim' },
-                    { id: 'stats', label: 'Ekip Emek' },
-                    { id: 'tools', label: 'Görsel Boyutlandırma' }
-                ];
-            }
-
+            let menuItems = isCtrl ? 
+                [{ id: 'kanban', label: 'Ana Sistem' }, { id: 'series', label: 'Seriler' }, { id: 'profile', label: 'Profilim' }, { id: 'stats', label: 'Ekip Emek' }, { id: 'tools', label: 'Görsel Boyutlandırma' }, { id: 'published', label: 'Yayınlananlar' }] : 
+                [{ id: 'kanban', label: 'Ana Sistem' }, { id: 'profile', label: 'Profilim' }, { id: 'stats', label: 'Ekip Emek' }, { id: 'tools', label: 'Görsel Boyutlandırma' }];
             menuItems.forEach((item, index) => {
                 const activeClass = (index === 0) ? 'active' : '';
                 dNav.innerHTML += `<button onclick="switchView('${item.id}')" id="nav-${item.id}" class="nav-btn ${activeClass} hover:text-indigo-300 pb-1">${item.label}</button>`;
@@ -414,10 +368,8 @@
         async function safeFetch(url, options = {}) {
             options.cache = "no-store";
             try {
-                const res = await fetch(url, options);
-                const text = await res.text();
-                try { return { ok: res.ok, data: JSON.parse(text) }; } 
-                catch (e) { return { ok: false, data: { error: "Sunucu hatası!" } }; }
+                const res = await fetch(url, options); const text = await res.text();
+                try { return { ok: res.ok, data: JSON.parse(text) }; } catch (e) { return { ok: false, data: { error: "Sunucu hatası!" } }; }
             } catch (err) { return { ok: false, data: { error: "İnternet bağlantısı koptu!" } }; }
         }
 
@@ -428,28 +380,14 @@
                 document.getElementById('login-view').classList.add('hidden');
                 document.getElementById('main-view').classList.remove('hidden');
                 document.getElementById('header-user-info').innerText = `${me.username}`;
-
                 renderNavigation(me.roles.split(','));
-
                 const avatarUrl = getAvatarUrl(me.profile_pic);
                 document.getElementById('header-avatar').style.backgroundImage = `url('${avatarUrl}')`;
-                
-                const profileEditAvatar = document.getElementById('profile-edit-avatar');
-                profileEditAvatar.innerHTML = ''; 
-                profileEditAvatar.style.backgroundImage = `url('${avatarUrl}')`;
-
+                document.getElementById('profile-edit-avatar').style.backgroundImage = `url('${avatarUrl}')`;
                 document.getElementById('profile-name').value = me.username;
-
                 const isAveris = (me.username === 'Averis');
                 document.getElementById('profile-name').disabled = isAveris;
-                document.getElementById('averis-p-info').classList.toggle('hidden', !isAveris);
-                
-                document.getElementById('lbl-select-photo').classList.toggle('hidden', isAveris);
-                document.getElementById('btn-delete-avatar').classList.toggle('hidden', isAveris || !me.profile_pic);
-
-                if(localStorage.getItem('mobileLayout') === 'double') toggleMobileLayout('double');
-                else toggleMobileLayout('single');
-
+                if(localStorage.getItem('mobileLayout') === 'double') toggleMobileLayout('double'); else toggleMobileLayout('single');
                 loadData();
             } else {
                 document.getElementById('login-view').classList.remove('hidden');
@@ -458,492 +396,331 @@
         }
 
         async function login() {
-            const u = document.getElementById('login-username').value;
-            const p = document.getElementById('login-password').value;
+            const u = document.getElementById('login-username').value; const p = document.getElementById('login-password').value;
             if(!u || !p) { alert("Lütfen isim ve şifre girin!"); return; }
             const { ok, data } = await safeFetch('/api/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({username: u, password: p}) });
             if(ok && data.success) { document.getElementById('login-username').value = ''; document.getElementById('login-password').value = ''; checkSession(); } 
             else { alert(data.error || "Giriş Başarısız"); }
         }
-
         async function logout() { await safeFetch('/api/logout', {method: 'POST'}); me = null; checkSession(); }
-
         function previewAvatar(event) {
             const file = event.target.files[0];
-            if (file) {
-                const profileEditAvatar = document.getElementById('profile-edit-avatar');
-                profileEditAvatar.innerHTML = ''; 
-                profileEditAvatar.style.backgroundImage = `url(${URL.createObjectURL(file)})`;
-            }
+            if (file) document.getElementById('profile-edit-avatar').style.backgroundImage = `url(${URL.createObjectURL(file)})`;
         }
-
         async function saveProfile() {
             if(me.username === 'Averis') return; 
-            const fd = new FormData();
-            fd.append('username', document.getElementById('profile-name').value);
-            const file = document.getElementById('profile-file').files[0];
-            if (file) fd.append('avatar', file);
+            const fd = new FormData(); fd.append('username', document.getElementById('profile-name').value);
+            const file = document.getElementById('profile-file').files[0]; if (file) fd.append('avatar', file);
             const { ok, data } = await safeFetch('/api/profile', { method: 'POST', body: fd });
-            if(ok && data.success) { 
-                alert('Profil güncellendi!'); 
-                document.getElementById('profile-file').value = ''; 
-                avatarCacheBuster = new Date().getTime(); 
-                checkSession(); 
-            }
-            else { alert(data.error); }
+            if(ok && data.success) { alert('Profil güncellendi!'); document.getElementById('profile-file').value = ''; avatarCacheBuster = new Date().getTime(); checkSession(); } else alert(data.error);
         }
-
         async function deleteAvatar() {
-            if(me.username === 'Averis') return; 
-            if(!confirm("Profil resminizi kaldırmak istiyor musunuz?")) return;
+            if(me.username === 'Averis' || !confirm("Profil resminizi kaldırmak istiyor musunuz?")) return;
             const { ok, data } = await safeFetch('/api/profile/avatar', { method: 'DELETE' });
-            if(ok && data.success) { 
-                alert('Resim kaldırıldı.'); 
-                avatarCacheBuster = new Date().getTime(); 
-                checkSession(); 
-            }
+            if(ok && data.success) { alert('Resim kaldırıldı.'); avatarCacheBuster = new Date().getTime(); checkSession(); }
         }
 
         async function loadStats() {
             const { ok, data } = await safeFetch('/api/stats');
-            if(!ok) return;
-            gStats = data;
-            renderStats();
+            if(ok) { gStats = data; renderStats(); }
         }
-
-        function toggleStatsSort() {
-            currentSort = currentSort === 'total' ? 'alpha' : 'total';
-            renderStats();
-        }
-
+        function toggleStatsSort() { currentSort = currentSort === 'total' ? 'alpha' : 'total'; renderStats(); }
         function renderStats() {
-            const grid = document.getElementById('stats-grid');
-            grid.innerHTML = '';
-            
+            const grid = document.getElementById('stats-grid'); grid.innerHTML = '';
             let sorted = [...gStats];
-            if (currentSort === 'total') {
-                sorted.sort((a, b) => {
-                    const totalA = Object.values(a.tasks).reduce((sum, val) => sum + val, 0);
-                    const totalB = Object.values(b.tasks).reduce((sum, val) => sum + val, 0);
-                    return totalB - totalA; 
-                });
-            } else {
-                sorted.sort((a, b) => a.username.localeCompare(b.username)); 
-            }
-
-            const sortBtn = document.getElementById('stats-sort-btn');
-            if(sortBtn) sortBtn.innerHTML = currentSort === 'total' ? '📊 Sıralama: En Çok Yapan' : '🔤 Sıralama: A-Z';
-
-            sorted.forEach(user => {
-                const avatar = getAvatarUrl(user.profile_pic);
-                
-                const t_ceviri = user.tasks['PENDING_TRANSLATION'] || 0;
-                const t_redakte = user.tasks['PENDING_PROOFREADING'] || 0;
-                const t_temizlik = user.tasks['PENDING_CLEANING'] || 0;
-                const t_dizgi = user.tasks['PENDING_TYPESETTING'] || 0;
-                const total = t_ceviri + t_redakte + t_temizlik + t_dizgi;
-
-                grid.innerHTML += `
-                    <div class="bg-[#0f1525] border border-slate-800 rounded-xl p-3 md:p-6 flex flex-col items-center w-full shadow-lg relative">
-                        <div class="w-12 h-12 md:w-20 md:h-20 rounded-full bg-slate-800 border-2 border-indigo-500/30 bg-cover bg-center mb-2 md:mb-4 shadow-md" style="background-image: url('${avatar}')"></div>
-                        <h3 class="text-white font-bold text-sm md:text-lg mb-2 md:mb-4 truncate w-full text-center">${user.username}</h3>
-                        
-                        <div class="w-full bg-[#161d2e] rounded-lg p-2 md:p-4 space-y-1 md:space-y-2 text-xs md:text-sm">
-                            <div class="flex justify-between border-b border-slate-800 pb-1 md:pb-2"><span class="font-bold text-amber-500">✏️ Çeviri</span> <span class="text-white">${t_ceviri}</span></div>
-                            <div class="flex justify-between border-b border-slate-800 pb-1 md:pb-2 pt-1"><span class="font-bold text-blue-400">🔍 Redakt</span> <span class="text-white">${t_redakte}</span></div>
-                            <div class="flex justify-between border-b border-slate-800 pb-1 md:pb-2 pt-1"><span class="font-bold text-teal-400">🧹 Temiz</span> <span class="text-white">${t_temizlik}</span></div>
-                            <div class="flex justify-between border-b border-slate-800 pb-1 md:pb-2 pt-1"><span class="font-bold text-indigo-400">🔤 Dizgi</span> <span class="text-white">${t_dizgi}</span></div>
-                            <div class="flex justify-between pt-1 md:pt-2 font-extrabold text-emerald-400"><span class="font-bold">🏆 Toplam</span> <span class="text-white font-black">${total}</span></div>
-                        </div>
-                    </div>`;
+            if (currentSort === 'total') sorted.sort((a, b) => Object.values(b.tasks).reduce((s, v) => s + v, 0) - Object.values(a.tasks).reduce((s, v) => s + v, 0));
+            else sorted.sort((a, b) => a.username.localeCompare(b.username)); 
+            document.getElementById('stats-sort-btn').innerHTML = currentSort === 'total' ? '📊 Sıralama: En Çok Yapan' : '🔤 Sıralama: A-Z';
+            sorted.forEach(u => {
+                const total = (u.tasks['PENDING_TRANSLATION']||0) + (u.tasks['PENDING_PROOFREADING']||0) + (u.tasks['PENDING_CLEANING']||0) + (u.tasks['PENDING_TYPESETTING']||0);
+                grid.innerHTML += `<div class="bg-[#0f1525] border border-slate-800 rounded-xl p-3 md:p-6 flex flex-col items-center shadow-lg">
+                    <div class="w-12 h-12 md:w-20 md:h-20 rounded-full bg-cover bg-center border-2 border-indigo-500/30 mb-2" style="background-image: url('${getAvatarUrl(u.profile_pic)}')"></div>
+                    <h3 class="text-white font-bold text-sm md:text-lg mb-2 truncate text-center w-full">${u.username}</h3>
+                    <div class="w-full bg-[#161d2e] rounded-lg p-2 md:p-4 text-xs md:text-sm space-y-1">
+                        <div class="flex justify-between border-b border-slate-800 pb-1"><span class="text-amber-500">✏️ Çeviri</span><span class="text-white">${u.tasks['PENDING_TRANSLATION']||0}</span></div>
+                        <div class="flex justify-between border-b border-slate-800 pb-1"><span class="text-blue-400">🔍 Redakt</span><span class="text-white">${u.tasks['PENDING_PROOFREADING']||0}</span></div>
+                        <div class="flex justify-between border-b border-slate-800 pb-1"><span class="text-teal-400">🧹 Temiz</span><span class="text-white">${u.tasks['PENDING_CLEANING']||0}</span></div>
+                        <div class="flex justify-between border-b border-slate-800 pb-1"><span class="text-indigo-400">🔤 Dizgi</span><span class="text-white">${u.tasks['PENDING_TYPESETTING']||0}</span></div>
+                        <div class="flex justify-between pt-1 font-bold text-emerald-400"><span>🏆 Toplam</span><span>${total}</span></div>
+                    </div></div>`;
             });
         }
 
         async function loadData() {
             const { ok, data } = await safeFetch('/api/data');
-            if(!ok) return;
-            gData = data;
-            
-            const seriesSelect = document.getElementById('new-chapter-series');
-            const currentSelection = seriesSelect.value;
-            let optionsHtml = '<option value="" disabled ' + (!currentSelection ? 'selected' : '') + '>-- Seri Seç --</option>';
-            optionsHtml += gData.series.map(s => `<option value="${s.id}">${s.title}</option>`).join('');
-            seriesSelect.innerHTML = optionsHtml;
-            if (currentSelection && gData.series.find(s => s.id == currentSelection)) {
-                seriesSelect.value = currentSelection;
-            }
-
-            if (me && me.roles.includes('Controller')) {
-                renderUserManagement();
-                renderSeriesAdmin();
-            }
+            if(!ok) return; gData = data;
+            const select = document.getElementById('new-chapter-series'); const cur = select.value;
+            select.innerHTML = '<option value="" disabled ' + (!cur ? 'selected' : '') + '>-- Seri Seç --</option>' + gData.series.map(s => `<option value="${s.id}">${s.title}</option>`).join('');
+            if (cur && gData.series.find(s => s.id == cur)) select.value = cur;
+            if (me && me.roles.includes('Controller')) { renderUserManagement(); renderSeriesAdmin(); }
             renderUI();
         }
 
         function renderUserManagement() {
-            const listDiv = document.getElementById('user-management-list');
-            listDiv.innerHTML = '';
+            const listDiv = document.getElementById('user-management-list'); listDiv.innerHTML = '';
             gData.users.forEach(u => {
-                const avatarUrl = getAvatarUrl(u.profile_pic);
-                const userBox = document.createElement('div');
-                userBox.className = "bg-slate-900 border border-slate-700 p-3 rounded-lg text-sm text-white mb-2";
-                
-                const rolesHTML = ['Translator', 'Cleaner', 'Typesetter', 'Proofreader', 'Controller'].map(r => {
-                    const checked = u.roles.includes(r) ? 'checked' : '';
-                    return `<label class="mr-3 inline-block whitespace-nowrap mb-1"><input type="checkbox" onchange="updateUserRoles(${u.id})" class="role-edit-${u.id} accent-emerald-500" value="${r}" ${checked}> ${r}</label>`;
-                }).join('');
-
-                userBox.innerHTML = `
-                    <div class="flex justify-between items-center mb-2 border-b border-slate-700 pb-2">
-                        <div class="flex items-center gap-3">
-                            <div class="w-7 h-7 rounded-full bg-cover bg-center border border-slate-600 shrink-0" style="background-image: url('${avatarUrl}')"></div>
-                            <span class="font-bold text-amber-300 truncate max-w-[120px]">${u.username}</span>
-                        </div>
-                        ${u.id !== me.id ? `<button onclick="deleteUser(${u.id})" class="text-xs bg-rose-700 hover:bg-rose-600 px-3 py-1.5 rounded-lg text-white shrink-0 active:scale-95 font-bold">Sil</button>` : '<span class="text-[10px] text-slate-500 shrink-0 border border-slate-700 px-2 py-1 rounded">(Sen)</span>'}
-                    </div>
-                    <div class="text-[11px] mt-2 flex flex-wrap">${rolesHTML}</div>`;
-                listDiv.appendChild(userBox);
+                const rolesHTML = ['Translator', 'Cleaner', 'Typesetter', 'Proofreader', 'Controller'].map(r => `<label class="mr-3 whitespace-nowrap"><input type="checkbox" onchange="updateUserRoles(${u.id})" class="role-edit-${u.id} accent-emerald-500" value="${r}" ${u.roles.includes(r)?'checked':''}> ${r}</label>`).join('');
+                listDiv.innerHTML += `<div class="bg-slate-900 border border-slate-700 p-3 rounded-lg text-sm mb-2"><div class="flex justify-between items-center mb-2 border-b border-slate-700 pb-2"><div class="flex items-center gap-2"><div class="w-7 h-7 rounded-full bg-cover" style="background-image: url('${getAvatarUrl(u.profile_pic)}')"></div><span class="font-bold text-amber-300">${u.username}</span></div>${u.id !== me.id ? `<button onclick="deleteUser(${u.id})" class="text-xs bg-rose-700 px-3 py-1 rounded">Sil</button>` : '<span class="text-[10px] text-slate-500">(Sen)</span>'}</div><div class="text-[11px] flex flex-wrap">${rolesHTML}</div></div>`;
             });
         }
 
         function renderUI() {
-            const myRoles = me.roles.split(',');
-            const isCtrl = myRoles.includes('Controller');
-
-            document.getElementById('admin-panel').classList.toggle('hidden', !isCtrl);
-            document.getElementById('lane-PENDING_TRANSLATION').classList.toggle('hidden', !(isCtrl || myRoles.includes('Translator')));
-            document.getElementById('lane-PENDING_CLEANING').classList.toggle('hidden', !(isCtrl || myRoles.includes('Cleaner')));
-            document.getElementById('lane-PENDING_PROOFREADING').classList.toggle('hidden', !(isCtrl || myRoles.includes('Proofreader')));
-            document.getElementById('lane-PENDING_TYPESETTING').classList.toggle('hidden', !(isCtrl || myRoles.includes('Typesetter')));
-            document.getElementById('lane-PENDING_PUBLISHING').classList.toggle('hidden', !isCtrl);
-
+            const myRoles = me.roles.split(','); const isCtrl = myRoles.includes('Controller');
+            ['PENDING_TRANSLATION', 'PENDING_CLEANING', 'PENDING_PROOFREADING', 'PENDING_TYPESETTING', 'PENDING_PUBLISHING'].forEach(stage => document.getElementById(`lane-${stage}`).classList.toggle('hidden', !(isCtrl || myRoles.includes(ROLE_MAP_TASK[stage.split('_')[1]]))));
             const hideBtn = document.getElementById('hide-assigned-btn');
-            if (hideBtn) {
-                hideBtn.innerHTML = hideAssigned ? '👁️ Başkalarının İşlerini Göster' : '🙈 Başkalarının İşlerini Gizle';
-                if(hideAssigned) { hideBtn.classList.add('text-emerald-400'); hideBtn.classList.remove('text-slate-300'); }
-                else { hideBtn.classList.remove('text-emerald-400'); hideBtn.classList.add('text-slate-300'); }
-            }
-
-            document.querySelectorAll('.lane-container').forEach(el => el.innerHTML = '');
-            const sidebar = document.getElementById('my-tasks-container');
-            sidebar.innerHTML = '';
+            if (hideBtn) { hideBtn.innerHTML = hideAssigned ? '👁️ Doluları Göster' : '🙈 Doluları Gizle'; hideBtn.className = `bg-slate-800 text-xs font-bold px-3 py-2 rounded border border-slate-700 ${hideAssigned ? 'text-emerald-400' : 'text-slate-300'}`; }
+            document.querySelectorAll('.lane-container').forEach(el => el.innerHTML = ''); document.getElementById('my-tasks-container').innerHTML = '';
 
             gData.chapters.forEach(ch => {
                 if (ch.status === 'PUBLISHED') return;
-
                 let activeTasks = [];
-                if (ch.status === 'TRANS_CLEAN') {
-                    activeTasks.push('TRANSLATION');
-                    if (!ch.is_cleaned) activeTasks.push('CLEANING');
-                } else if (ch.status === 'PROOF_CLEAN') {
-                    if (!ch.is_proofread) activeTasks.push('PROOFREADING');
-                    if (!ch.is_cleaned) activeTasks.push('CLEANING');
-                } else if (ch.status === 'PENDING_TYPESETTING') {
-                    activeTasks.push('TYPESETTING');
-                } else if (ch.status === 'PENDING_PUBLISHING') {
-                    activeTasks.push('PUBLISHING');
-                }
+                if (ch.status === 'TRANS_CLEAN') { activeTasks.push('TRANSLATION'); if (!ch.is_cleaned) activeTasks.push('CLEANING'); } 
+                else if (ch.status === 'PROOF_CLEAN') { if (!ch.is_proofread) activeTasks.push('PROOFREADING'); if (!ch.is_cleaned) activeTasks.push('CLEANING'); } 
+                else if (ch.status === 'PENDING_TYPESETTING') activeTasks.push('TYPESETTING'); 
+                else if (ch.status === 'PENDING_PUBLISHING') activeTasks.push('PUBLISHING');
 
                 activeTasks.forEach(task => {
-                    const reqRole = ROLE_MAP_TASK[task];
-                    const stageFolder = 'PENDING_' + task;
+                    let assigneeId = task === 'CLEANING' ? ch.cleaner_id : task === 'PROOFREADING' ? ch.proofreader_id : ch.assigned_to;
+                    let assigneeName = task === 'CLEANING' ? ch.cleaner_name : task === 'PROOFREADING' ? ch.proofreader_name : ch.assignee_name;
 
-                    let currentAssigneeId = null;
-                    let currentAssigneeName = '';
-                    if (task === 'CLEANING') { currentAssigneeId = ch.cleaner_id; currentAssigneeName = ch.cleaner_name; }
-                    else if (task === 'PROOFREADING') { currentAssigneeId = ch.proofreader_id; currentAssigneeName = ch.proofreader_name; }
-                    else { currentAssigneeId = ch.assigned_to; currentAssigneeName = ch.assignee_name; }
+                    if (assigneeId === me.id) document.getElementById('my-tasks-container').appendChild(createSidebarCard(ch, task, assigneeId));
+                    if (hideAssigned && assigneeId !== null && assigneeId !== me.id) return; 
 
-                    if (currentAssigneeId === me.id) {
-                        sidebar.appendChild(createSidebarCard(ch, task, currentAssigneeId));
-                    }
-
-                    if (hideAssigned && currentAssigneeId !== null && currentAssigneeId !== me.id) {
-                        return; 
-                    }
-
-                    const laneEl = document.querySelector(`#container-${stageFolder}`);
+                    const laneEl = document.querySelector(`#container-PENDING_${task}`);
                     if (laneEl) {
-                        const card = document.createElement('div');
-                        card.className = "handdrawn-border bg-slate-900 p-4 md:p-5 rounded-xl w-full flex flex-col gap-3 relative hover:bg-slate-800 transition-colors shadow-md";
-
-                        let actionHtml = '';
-                        if (currentAssigneeId) {
-                            let textSizde = task === 'PUBLISHING' ? 'KONTROLDE SİZDE' : 'SİZDE';
-                            let textAlindi = task === 'PUBLISHING' ? `KONTROLDE (${currentAssigneeName})` : `ALINDI (${currentAssigneeName})`;
-                            
-                            actionHtml = currentAssigneeId === me.id
-                                ? `<span class="text-[11px] font-bold text-emerald-400 bg-emerald-950/60 px-3 py-1.5 rounded-lg w-full text-center border border-emerald-900">${textSizde}</span>`
-                                : `<span class="text-[11px] font-bold text-slate-400 bg-slate-800 px-3 py-1.5 rounded-lg w-full text-center truncate border border-slate-700">${textAlindi}</span>`;
-                        } else {
-                            if (isCtrl || myRoles.includes(reqRole)) {
-                                let btnText = task === 'PUBLISHING' ? 'KONTROL ET' : 'GÖREVİ AL';
-                                let btnColor = task === 'PUBLISHING' ? 'bg-rose-600 hover:bg-rose-500' : 'bg-indigo-600 hover:bg-indigo-500';
-                                actionHtml = `<button onclick="claimChapter(${ch.id}, '${task}')" class="text-xs font-bold text-white ${btnColor} py-2.5 rounded-lg w-full active:scale-95 transition-transform shadow-md">${btnText}</button>`;
-                            } else {
-                                actionHtml = `<span class="text-[11px] text-slate-500 block text-center w-full bg-slate-800/50 py-1.5 rounded-lg">Yetkisiz</span>`;
-                            }
-                        }
-
-                        let parallelBadge = '';
-                        if (ch.status === 'TRANS_CLEAN') {
-                            if (task === 'TRANSLATION' && ch.is_cleaned) { parallelBadge = '<div class="text-[10px] font-bold text-teal-400 bg-teal-950/50 border border-teal-800 px-2 py-1 rounded mt-1 mb-2 inline-block shadow-sm">✅ Temizlik Bitti</div>'; }
-                        } else if (ch.status === 'PROOF_CLEAN') {
-                            if (task === 'PROOFREADING' && ch.is_cleaned) { parallelBadge = '<div class="text-[10px] font-bold text-teal-400 bg-teal-950/50 border border-teal-800 px-2 py-1 rounded mt-1 mb-2 inline-block shadow-sm">✅ Temizlik Bitti</div>'; } 
-                            else if (task === 'CLEANING' && ch.is_proofread) { parallelBadge = '<div class="text-[10px] font-bold text-blue-400 bg-blue-950/50 border border-blue-800 px-2 py-1 rounded mt-1 mb-2 inline-block shadow-sm">✅ Redakte Bitti</div>'; }
-                            else if (task === 'CLEANING') { parallelBadge = '<div class="text-[10px] font-bold text-amber-400 bg-amber-950/50 border border-amber-800 px-2 py-1 rounded mt-1 mb-2 inline-block shadow-sm">✅ Çeviri Bitti</div>'; }
-                        }
-
-                        let deleteBtnHtml = isCtrl ? `<button onclick="deleteChapterAPI(${ch.id})" title="Bölümü Sil" class="absolute top-3 right-3 text-rose-500 hover:text-white hover:bg-rose-600 bg-slate-800 p-2 rounded-lg border border-slate-700 transition-colors active:scale-95 shadow-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>` : '';
-                        const srcLink = ch.source_link ? `<a href="${ch.source_link}" target="_blank" class="text-xs text-blue-400 hover:text-blue-300 underline truncate block mt-1 flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg> Kaynak</a>` : '';
-                        const coverHtml = ch.cover_filename ? `<img src="/covers/${ch.cover_filename}" class="w-full h-full object-cover rounded border border-slate-700 shadow-sm">` : '<span class="text-slate-600 font-bold">YOK</span>';
-
-                        card.innerHTML = `
-                            ${deleteBtnHtml}
-                            <div class="flex gap-4 items-center ${isCtrl ? 'pr-10' : ''}">
-                                <div class="w-16 h-24 bg-slate-800 rounded flex items-center justify-center shrink-0 text-[10px] text-slate-500 overflow-hidden shadow-inner">${coverHtml}</div>
-                                <div class="flex-1 min-w-0">
-                                    <h4 class="text-lg md:text-base font-bold text-white truncate">${ch.series_title}</h4>
-                                    <p class="text-sm font-semibold text-slate-400 mt-1 mb-1">Bölüm ${ch.chapter_number}</p>
-                                    ${parallelBadge}
-                                    ${srcLink}
-                                </div>
-                            </div>
-                            <div class="mt-2 pt-3 border-t border-slate-800 flex justify-between items-center">${actionHtml}</div>
-                        `;
-                        laneEl.appendChild(card);
+                        let actHtml = assigneeId ? (assigneeId === me.id ? `<span class="text-[11px] font-bold text-emerald-400 bg-emerald-950 px-3 py-1.5 rounded w-full text-center border border-emerald-900">SİZDE</span>` : `<span class="text-[11px] font-bold text-slate-400 bg-slate-800 px-3 py-1.5 rounded w-full text-center border border-slate-700">ALINDI (${assigneeName})</span>`) : (isCtrl || myRoles.includes(ROLE_MAP_TASK[task]) ? `<button onclick="claimChapter(${ch.id}, '${task}')" class="text-xs font-bold text-white bg-indigo-600 px-3 py-2 rounded w-full">GÖREVİ AL</button>` : `<span class="text-[11px] text-slate-500 text-center w-full bg-slate-800/50 py-1.5 rounded">Yetkisiz</span>`);
+                        
+                        let delHtml = isCtrl ? `<button onclick="deleteChapterAPI(${ch.id})" class="absolute top-2 right-2 text-rose-500 bg-slate-800 p-1.5 rounded border border-slate-700"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>` : '';
+                        let cvrHtml = ch.cover_filename ? `<img src="/covers/${ch.cover_filename}" class="w-16 h-24 object-cover rounded border border-slate-700">` : '<div class="w-16 h-24 bg-slate-800 rounded"></div>';
+                        let pbHtml = '';
+                        if (ch.status === 'TRANS_CLEAN' && task === 'TRANSLATION' && ch.is_cleaned) pbHtml = '<div class="text-[10px] text-teal-400">✅ Temizlik Bitti</div>';
+                        
+                        laneEl.innerHTML += `<div class="handdrawn-border bg-slate-900 p-4 rounded-xl flex flex-col gap-3 relative hover:bg-slate-800 transition-colors">${delHtml}<div class="flex gap-4"><div class="shrink-0">${cvrHtml}</div><div class="min-w-0 flex-1"><h4 class="text-base font-bold truncate text-white">${ch.series_title}</h4><p class="text-sm text-slate-400">Bölüm ${ch.chapter_number}</p>${pbHtml}${ch.source_link ? `<a href="${ch.source_link}" target="_blank" class="text-xs text-blue-400 underline truncate block mt-1">Kaynak</a>` : ''}</div></div><div class="mt-2 border-t border-slate-800 pt-3">${actHtml}</div></div>`;
                     }
                 });
             });
-
             renderPublished();
         }
 
         function createSidebarCard(ch, task, assigneeId) {
-            const div = document.createElement('div');
-            div.className = "bg-slate-800 border border-slate-700 rounded-xl p-4 mb-4 flex flex-col gap-3 relative shadow-lg";
-            const coverHtml = ch.cover_filename ? `<img src="/covers/${ch.cover_filename}" class="w-14 h-20 object-cover rounded-lg border border-slate-600 shrink-0">` : `<div class="w-14 h-20 bg-slate-900 rounded-lg border border-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-600 shrink-0">YOK</div>`;
+            const div = document.createElement('div'); div.className = "bg-slate-800 border border-slate-700 rounded-xl p-4 flex flex-col gap-3 relative shadow-lg";
+            const stageF = 'PENDING_' + task; const myFiles = ch.files.filter(f => f.stage === stageF); const isCtrl = me.roles.split(',').includes('Controller');
+            const needsF = (task !== 'PUBLISHING' && !isCtrl); const hasF = myFiles.length > 0;
+            let fHtml = `<div id="f-${ch.id}-${task}" class="bg-slate-900 p-2 rounded text-[10px] border border-slate-700">${hasF ? myFiles.map(f=>`<div class="text-emerald-400 truncate">✓ ${f.clean_filename}</div>`).join('') : '<div class="text-rose-400 italic">Dosya yok</div>'}</div>`;
+            let dHtml = '';
+            if (task === 'PROOFREADING') dHtml = `<button onclick="window.open('/api/chapters/download/${ch.id}/PENDING_TRANSLATION')" class="text-[11px] bg-slate-700 px-2 py-1.5 rounded text-amber-300 w-full mb-1">📥 Çeviri İndir</button>`;
+            else if (task === 'TYPESETTING') dHtml = `<button onclick="window.open('/api/chapters/download/${ch.id}/PENDING_PROOFREADING')" class="text-[11px] bg-slate-700 px-2 py-1.5 rounded text-blue-300 w-full mb-1">📥 Redakte İndir</button><button onclick="window.open('/api/chapters/download/${ch.id}/PENDING_CLEANING')" class="text-[11px] bg-slate-700 px-2 py-1.5 rounded text-teal-300 w-full mb-1">📥 Temizleri İndir</button>`;
             
-            const stageFolder = 'PENDING_' + task;
-            let currentStageLabel = STAGE_LABELS[stageFolder] || stageFolder;
-            const myFiles = ch.files.filter(f => f.stage === stageFolder);
-            const isCtrl = me.roles.split(',').includes('Controller');
-            
-            const needsFile = (task !== 'PUBLISHING' && !isCtrl);
-            const hasFiles = myFiles.length > 0;
-            const submitDisabledClass = (needsFile && !hasFiles) ? 'bg-slate-600 text-slate-400 cursor-not-allowed opacity-50' : 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer active:scale-95 shadow-md';
-
-            let filesHtml = `<div class="text-[11px] font-bold text-slate-400 border-b border-slate-700 pb-1 mb-2">Eklenen Dosyalar</div>`;
-            const filesContainerId = `files-container-${ch.id}-${task}`;
-
-            if (task === 'PUBLISHING') {
-                filesHtml = `<div class="text-[10px] text-slate-300 mb-2">Tüm aşamalardaki dosyalar:</div><div class="space-y-1 bg-slate-950 p-2 rounded max-h-32 overflow-y-auto border border-slate-800">`;
-                ch.files.forEach(f => {
-                    let rName = '';
-                    if(f.stage === 'PENDING_TRANSLATION') rName = 'Çeviri';
-                    else if(f.stage === 'PENDING_CLEANING') rName = 'Temizlik';
-                    else if(f.stage === 'PENDING_TYPESETTING') rName = 'Dizgi';
-                    else if(f.stage === 'PENDING_PROOFREADING') rName = 'Redakte';
-                    filesHtml += `<div class="text-[10px] text-emerald-400 truncate mb-1">✓ ${rName}: ${f.clean_filename}</div>`;
-                });
-                if(ch.files.length === 0) filesHtml += `<div class="text-[10px] text-slate-500">Dosya yok.</div>`;
-                filesHtml += `</div>`;
-            } else {
-                filesHtml = `<div id="${filesContainerId}">` + filesHtml;
-                myFiles.forEach(f => { filesHtml += `<div class="text-[10px] text-emerald-400 truncate mb-1">✓ ${f.clean_filename}</div>`; });
-                if(myFiles.length === 0) filesHtml += `<div class="text-[10px] text-rose-400 italic">Henüz dosya eklenmedi (Zorunlu)</div>`;
-                filesHtml += `</div>`;
-            }
-
-            let downloadsHtml = '';
-            if (task === 'PROOFREADING') downloadsHtml += `<button onclick="window.open('/api/chapters/download/${ch.id}/PENDING_TRANSLATION')" class="text-[11px] font-bold bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-amber-300 w-full text-left mb-2 active:scale-95 transition-transform">📥 Çeviri .txt İndir</button>`;
-            else if (task === 'TYPESETTING') {
-                downloadsHtml += `<button onclick="window.open('/api/chapters/download/${ch.id}/PENDING_PROOFREADING')" class="text-[11px] font-bold bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-blue-300 w-full text-left mb-2 active:scale-95 transition-transform">📥 Redakte Edilmiş Çeviri (.txt)</button>`;
-                downloadsHtml += `<button onclick="window.open('/api/chapters/download/${ch.id}/PENDING_CLEANING')" class="text-[11px] font-bold bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-teal-300 w-full text-left active:scale-95 transition-transform">📥 Temiz Görseller (ZIP)</button>`;
-            } else if (task === 'PUBLISHING') downloadsHtml += `<button onclick="window.open('/api/chapters/download/${ch.id}/ALL')" class="text-xs font-bold bg-rose-700 hover:bg-rose-600 px-3 py-3 rounded-lg text-white w-full text-center mb-3 shadow-lg active:scale-95 transition-transform border border-rose-500">📦 TÜM GEÇMİŞİ İNDİR (ZIP)</button>`;
-
-            let uploadAccept = '.png,.jpg,.jpeg,.webp';
-            if(task === 'TRANSLATION' || task === 'PROOFREADING') uploadAccept = '.txt';
-
-            let actionBtn = `
-                <div class="flex gap-2 items-center mt-3 pt-3 border-t border-slate-700">
-                    <input type="file" id="file-${ch.id}-${task}" accept="${uploadAccept}" multiple class="hidden" onchange="uploadMultipleFiles(${ch.id}, '${task}')">
-                    <label id="upload-label-${ch.id}-${task}" for="file-${ch.id}-${task}" class="cursor-pointer bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-3 py-2.5 rounded-lg font-bold flex-1 text-center truncate transition-transform active:scale-95 border border-slate-600">📎 Yükle</label>
-                    <button id="submit-btn-${ch.id}-${task}" onclick="${needsFile && !hasFiles ? 'alert(\'Önce geçerli bir dosya yüklemelisiniz!\')' : `submitStage(${ch.id}, '${task}')`}" class="${submitDisabledClass} text-xs font-bold px-4 py-2.5 rounded-lg truncate transition-transform">İLERLET</button>
-                </div>`;
-            if (task === 'PUBLISHING') actionBtn = `<button onclick="submitStage(${ch.id}, '${task}')" class="bg-emerald-600 hover:bg-emerald-500 w-full text-white text-xs font-bold px-4 py-3 rounded-lg active:scale-95 transition-transform shadow-md border border-emerald-400">✅ YAYINLANDI İŞARETLE</button>`;
-
-            const releaseBtn = task !== 'PUBLISHING' ? `<button onclick="releaseChapter(${ch.id}, '${task}')" class="text-[10px] font-bold text-rose-300 hover:text-white bg-rose-950 hover:bg-rose-700 px-3 py-1.5 rounded-lg border border-rose-800 transition-colors absolute top-4 right-4 active:scale-95 shadow-sm">❌ Bırak</button>` : '';
-
-            div.innerHTML = `
-                ${releaseBtn}
-                <div class="flex gap-4 items-start mb-2 pr-16">
-                    ${coverHtml}
-                    <div class="flex-1 min-w-0 pt-1">
-                        <div class="text-sm font-bold text-white truncate">${ch.series_title}</div>
-                        <div class="text-xs font-semibold text-slate-400 mb-1">Bölüm ${ch.chapter_number}</div>
-                        <div class="text-xs font-bold mt-1 bg-slate-900 inline-block px-2 py-1 rounded border border-slate-700">${currentStageLabel}</div>
-                    </div>
-                </div>
-                ${ch.source_link ? `<a href="${ch.source_link}" target="_blank" class="text-xs text-blue-400 hover:text-blue-300 underline mb-3 block flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg> Kaynağa Git</a>` : ''}
-                ${downloadsHtml}
-                <div class="bg-slate-900 p-3 rounded-lg border border-slate-700 mt-2 shadow-inner">${filesHtml}</div>
-                ${actionBtn}
-            `;
+            div.innerHTML = `<button onclick="releaseChapter(${ch.id}, '${task}')" class="absolute top-2 right-2 text-[10px] text-rose-300 bg-rose-950 px-2 py-1 rounded">Bırak</button><div class="flex gap-3 pr-10"><div class="shrink-0 w-12 h-16 bg-slate-900 rounded border border-slate-700">${ch.cover_filename?`<img src="/covers/${ch.cover_filename}" class="w-full h-full object-cover rounded">`:''}</div><div><div class="text-sm font-bold text-white truncate">${ch.series_title}</div><div class="text-xs text-slate-400">Bölüm ${ch.chapter_number}</div><div class="text-[10px] font-bold mt-1 text-emerald-400">${STAGE_LABELS[stageF]||stageF}</div></div></div>${dHtml}${fHtml}<div class="flex gap-2 items-center"><input type="file" id="fi-${ch.id}-${task}" multiple class="hidden" onchange="uploadMultipleFiles(${ch.id}, '${task}')"><label for="fi-${ch.id}-${task}" class="bg-slate-700 text-xs px-2 py-2 rounded text-center flex-1 cursor-pointer">📎 Yükle</label><button onclick="${needsF&&!hasF?'alert(\\\'Önce dosya yükleyin\\\')':`submitStage(${ch.id}, '${task}')`}" class="text-xs font-bold px-3 py-2 rounded flex-1 ${needsF&&!hasF?'bg-slate-600 text-slate-400':'bg-emerald-600 text-white'}">İLERLET</button></div>`;
             return div;
         }
 
         function renderPublished() {
-            const grid = document.getElementById('published-grid'); grid.innerHTML = '';
-            const pub = gData.chapters.filter(c => c.status === 'PUBLISHED');
-            if(pub.length === 0) { grid.innerHTML = '<div class="text-slate-500 italic col-span-full p-4 text-center bg-slate-900 rounded-xl border border-slate-800">Henüz yayınlanmış bölüm yok.</div>'; return; }
-            pub.forEach(ch => {
-                const coverHtml = ch.cover_filename ? `<img src="/covers/${ch.cover_filename}" class="w-20 h-28 object-cover rounded-lg border border-slate-600 shrink-0">` : `<div class="w-20 h-28 bg-slate-800 rounded-lg flex items-center justify-center text-xs font-bold text-slate-500 border border-slate-700 shrink-0">YOK</div>`;
-                grid.innerHTML += `
-                    <div class="bg-slate-900 border border-slate-700 rounded-xl p-5 flex gap-4 items-center hover:bg-slate-800 transition-colors shadow-md">
-                        ${coverHtml}
-                        <div class="flex-1 min-w-0">
-                            <h3 class="text-white font-bold text-lg truncate">${ch.series_title}</h3>
-                            <p class="text-slate-400 text-sm font-semibold mb-3">Bölüm ${ch.chapter_number}</p>
-                            <span class="text-emerald-400 font-bold bg-emerald-950 px-3 py-1.5 rounded-lg border border-emerald-800 text-xs shadow-sm inline-flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Yayınlandı</span>
-                        </div>
-                    </div>`;
-            });
+            const grid = document.getElementById('published-grid'); grid.innerHTML = ''; const pub = gData.chapters.filter(c => c.status === 'PUBLISHED');
+            if(pub.length === 0) return grid.innerHTML = '<div class="text-slate-500 col-span-full">Yok.</div>';
+            pub.forEach(ch => grid.innerHTML += `<div class="bg-slate-900 border border-slate-700 rounded-xl p-4 flex gap-4 hover:bg-slate-800"><div class="shrink-0 w-16 h-24">${ch.cover_filename?`<img src="/covers/${ch.cover_filename}" class="w-full h-full object-cover rounded">`:''}</div><div class="flex-1"><h3 class="text-white font-bold">${ch.series_title}</h3><p class="text-slate-400 text-sm">Bölüm ${ch.chapter_number}</p><span class="text-emerald-400 text-xs font-bold bg-emerald-950 px-2 py-1 rounded">✅ Yayınlandı</span></div></div>`);
         }
 
         function renderSeriesAdmin() {
-            const list = document.getElementById('admin-series-list');
-            list.innerHTML = '';
+            const list = document.getElementById('admin-series-list'); list.innerHTML = '';
             gData.series.forEach(s => {
-                const s_chapters = gData.chapters.filter(c => c.series_id === s.id);
-                let chHtml = '';
-                s_chapters.forEach(c => {
-                    const statusHtml = getDetailedStatusHTML(c);
-                    chHtml += `<div class="flex justify-between items-center bg-slate-950 p-3 rounded-lg border border-slate-800 mt-3 ml-2 md:ml-6"><span class="text-sm text-slate-300 font-semibold flex-1">Bölüm ${c.chapter_number} <span class="text-xs text-slate-500 ml-2 block sm:inline mt-1 sm:mt-0 font-normal">(Durum: ${statusHtml})</span></span><button onclick="deleteChapterAPI(${c.id})" class="text-xs bg-rose-700 hover:bg-rose-600 text-white px-4 py-2 rounded-lg font-bold transition-transform active:scale-95 shrink-0 shadow-sm border border-rose-900">Bölümü Sil</button></div>`;
-                });
-
-                const seriesCoverHtml = s.cover_filename ? `<img src="/covers/${s.cover_filename}" class="w-12 h-16 object-cover rounded-lg border border-slate-600 shrink-0">` : `<div class="w-12 h-16 bg-slate-800 rounded-lg shrink-0 flex items-center justify-center text-[10px] font-bold text-slate-600 border border-slate-700">YOK</div>`;
-
-                list.innerHTML += `
-                    <div class="bg-slate-900 p-4 md:p-5 rounded-xl border border-slate-700 shadow-md">
-                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-                            <div class="flex items-center gap-4">
-                                ${seriesCoverHtml}
-                                <span class="font-bold text-white text-lg md:text-xl">${s.title}</span>
-                            </div>
-                            <button onclick="deleteSeriesAPI(${s.id})" class="text-sm bg-rose-800 hover:bg-rose-700 text-white px-4 py-2.5 rounded-lg font-bold transition-transform active:scale-95 shrink-0 shadow-sm border border-rose-900 sm:w-auto w-full">🗑️ Tüm Seriyi Sil</button>
-                        </div>
-                        <div class="mt-4 border-t border-slate-800 pt-2">
-                            ${chHtml || '<div class="text-sm text-slate-500 ml-2 md:ml-6 mt-2 italic bg-slate-950 p-3 rounded-lg border border-slate-800">Bu seride henüz bölüm yok.</div>'}
-                        </div>
-                    </div>`;
+                const s_ch = gData.chapters.filter(c => c.series_id === s.id);
+                let chHtml = s_ch.map(c => `<div class="flex justify-between bg-slate-950 p-2 rounded mt-2 border border-slate-800"><span class="text-sm text-slate-300">Bölüm ${c.chapter_number}</span><button onclick="deleteChapterAPI(${c.id})" class="text-xs bg-rose-700 px-2 py-1 rounded text-white">Sil</button></div>`).join('');
+                list.innerHTML += `<div class="bg-slate-900 p-4 rounded-xl border border-slate-700"><div class="flex justify-between items-center"><span class="font-bold text-white">${s.title}</span><button onclick="deleteSeriesAPI(${s.id})" class="text-sm bg-rose-800 px-3 py-1.5 rounded text-white">Seriyi Sil</button></div><div class="mt-3 border-t border-slate-800 pt-2">${chHtml||'<div class="text-xs text-slate-500">Bölüm yok.</div>'}</div></div>`;
             });
         }
 
         async function claimChapter(id, task) { const {ok, data} = await safeFetch(`/api/chapters/claim/${id}/${task}`, {method: 'POST'}); if(ok && data.success) loadData(); else alert(data.error); }
-        async function releaseChapter(id, task) { if(!confirm("Görevi bırakmak istediğinize emin misiniz?")) return; const {ok, data} = await safeFetch(`/api/chapters/release/${id}/${task}`, {method: 'POST'}); if(ok && data.success) loadData(); else alert(data.error); }
+        async function releaseChapter(id, task) { if(!confirm("Emin misiniz?")) return; const {ok, data} = await safeFetch(`/api/chapters/release/${id}/${task}`, {method: 'POST'}); if(ok && data.success) loadData(); else alert(data.error); }
         async function uploadMultipleFiles(id, task) {
-            const fileInput = document.getElementById(`file-${id}-${task}`); const files = fileInput.files; if (files.length === 0) return;
-            const submitBtn = document.getElementById(`submit-btn-${id}-${task}`); const uploadLabel = document.getElementById(`upload-label-${id}-${task}`); const filesContainer = document.getElementById(`files-container-${id}-${task}`);
-            submitBtn.classList.add('opacity-50', 'pointer-events-none'); uploadLabel.classList.add('opacity-50', 'pointer-events-none'); uploadLabel.innerText = "⏳ Yükleniyor...";
-            let tempHtml = '<div class="text-[11px] font-bold text-slate-400 border-b border-slate-700 pb-1 mb-2">Yükleniyor...</div>';
-            for(let i=0; i<files.length; i++) tempHtml += `<div class="text-[10px] text-amber-400 truncate animate-pulse mb-1">⏳ ${files[i].name}</div>`;
-            filesContainer.innerHTML = tempHtml;
-            const formData = new FormData(); for(let i=0; i<files.length; i++) formData.append('files', files[i]);
-            const {ok, data} = await safeFetch(`/api/chapters/upload/${id}/${task}`, { method: 'POST', body: formData });
-            if(ok && data.success) {
-                let successHtml = '<div class="text-[11px] font-bold text-slate-400 border-b border-slate-700 pb-1 mb-2">Eklenen Dosyalar</div>';
-                for(let i=0; i<files.length; i++) successHtml += `<div class="text-[10px] text-emerald-400 truncate font-bold mb-1">✅ Başarılı: ${files[i].name}</div>`;
-                filesContainer.innerHTML = successHtml; uploadLabel.innerText = "📎 Yükle"; setTimeout(() => { fileInput.value = ''; loadData(); }, 1000);
-            } else { alert(data.error); loadData(); }
+            const input = document.getElementById(`fi-${id}-${task}`); const files = input.files; if (!files.length) return;
+            const fd = new FormData(); for(let i=0; i<files.length; i++) fd.append('files', files[i]);
+            const {ok, data} = await safeFetch(`/api/chapters/upload/${id}/${task}`, { method: 'POST', body: fd });
+            if(ok && data.success) { alert("Yüklendi!"); loadData(); } else { alert(data.error); }
         }
         async function submitStage(id, task) { const {ok, data} = await safeFetch(`/api/chapters/submit/${id}/${task}`, {method: 'POST'}); if(ok && data.success) { loadData(); if(!document.getElementById('view-stats').classList.contains('hidden')) loadStats(); } else alert(data.error); }
         
         async function createUser() {
             const u = document.getElementById('new-user-name').value; const p = document.getElementById('new-user-pass').value;
-            const checkedBoxes = document.querySelectorAll('.role-cb:checked'); const selectedRoles = Array.from(checkedBoxes).map(cb => cb.value);
-            if(!u || !p || selectedRoles.length === 0) return alert('İsim, Şifre ve rol seçin.');
-            const {ok, data} = await safeFetch('/api/admin/users', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({username: u, password: p, roles: selectedRoles}) });
-            if(ok && data.success) { document.getElementById('new-user-name').value = ''; document.getElementById('new-user-pass').value = ''; checkedBoxes.forEach(cb => cb.checked = false); loadData(); alert('Üye Eklendi!'); } else { alert(data.error); }
+            const cb = Array.from(document.querySelectorAll('.role-cb:checked')).map(c => c.value);
+            if(!u || !p || cb.length === 0) return alert('Doldurun.');
+            const {ok, data} = await safeFetch('/api/admin/users', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({username: u, password: p, roles: cb}) });
+            if(ok && data.success) { document.getElementById('new-user-name').value=''; document.getElementById('new-user-pass').value=''; loadData(); alert('Eklendi!'); } else alert(data.error);
         }
-        async function deleteUser(id) { if(!confirm("Kullanıcıyı silmek istediğinize emin misiniz?")) return; const {ok, data} = await safeFetch(`/api/admin/users/${id}`, {method: 'DELETE'}); if(ok && data.success) loadData(); else alert(data.error); }
+        async function deleteUser(id) { if(!confirm("Emin misiniz?")) return; const {ok, data} = await safeFetch(`/api/admin/users/${id}`, {method: 'DELETE'}); if(ok && data.success) loadData(); else alert(data.error); }
         async function updateUserRoles(id) {
-            const checkedBoxes = document.querySelectorAll(`.role-edit-${id}:checked`); const selectedRoles = Array.from(checkedBoxes).map(cb => cb.value);
-            if(selectedRoles.length === 0) { alert("En az 1 rol olmalı!"); loadData(); return; }
-            const {ok, data} = await safeFetch(`/api/admin/users/${id}/roles`, { method: 'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({roles: selectedRoles}) });
+            const cb = Array.from(document.querySelectorAll(`.role-edit-${id}:checked`)).map(c => c.value);
+            if(!cb.length) return alert("Rol seçin!");
+            const {ok, data} = await safeFetch(`/api/admin/users/${id}/roles`, { method: 'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({roles: cb}) });
             if(!ok || !data.success) alert(data.error);
         }
         async function createSeries() {
-            const title = document.getElementById('new-series-title').value; const file = document.getElementById('new-series-cover').files[0];
-            if(!title || !file) return alert('Başlık ve kapak dosyası zorunlu.');
-            const fd = new FormData(); fd.append('title', title); fd.append('cover', file);
+            const t = document.getElementById('new-series-title').value; const f = document.getElementById('new-series-cover').files[0];
+            if(!t || !f) return alert('Doldurun.');
+            const fd = new FormData(); fd.append('title', t); fd.append('cover', f);
             const {ok, data} = await safeFetch('/api/admin/series', { method: 'POST', body: fd });
-            if(ok && data.success) { document.getElementById('new-series-title').value = ''; document.getElementById('new-series-cover').value = ''; loadData(); alert('Seri Eklendi!');} else { alert(data.error); }
+            if(ok && data.success) { document.getElementById('new-series-title').value=''; loadData(); alert('Eklendi!'); } else alert(data.error);
         }
-        
         async function createChapter() {
-            const seriesSelect = document.getElementById('new-chapter-series');
-            const series_id = seriesSelect.value;
-            const num = document.getElementById('new-chapter-num').value;
-            const url = document.getElementById('new-chapter-url').value.trim();
-            if(!series_id || !num) return alert('Lütfen Seriyi seçin ve Bölüm numarasını girin.');
-            if(!url) return alert('Lütfen bölümün kaynak linkini (URL) ekleyin.');
-            const {ok, data} = await safeFetch('/api/admin/chapters', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ series_id: parseInt(series_id), chapter_number: parseInt(num), source_link: url }) });
-            if(ok && data.success) { 
-                document.getElementById('new-chapter-num').value = ''; 
-                document.getElementById('new-chapter-url').value = ''; 
-                loadData(); 
-                alert('Bölüm havuza eklendi!'); 
-            } else { alert(data.error); }
+            const sid = document.getElementById('new-chapter-series').value; const num = document.getElementById('new-chapter-num').value; const url = document.getElementById('new-chapter-url').value;
+            if(!sid || !num || !url) return alert('Doldurun.');
+            const {ok, data} = await safeFetch('/api/admin/chapters', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ series_id: parseInt(sid), chapter_number: parseInt(num), source_link: url }) });
+            if(ok && data.success) { document.getElementById('new-chapter-num').value=''; document.getElementById('new-chapter-url').value=''; loadData(); alert('Eklendi!'); } else alert(data.error);
         }
-        
-        async function deleteSeriesAPI(id) { if(!confirm('DİKKAT: Bu seriyi, seriye ait TÜM BÖLÜMLERİ ve YÜKLENEN DOSYALARI silmek istediğinize emin misiniz? Bu işlem geri alınamaz!')) return; const {ok, data} = await safeFetch(`/api/admin/series/${id}`, {method: 'DELETE'}); if(ok && data.success) { alert('Seri ve içerikleri tamamen silindi!'); loadData(); } else { alert(data.error); } }
-        async function deleteChapterAPI(id) { if(!confirm('DİKKAT: Bu bölümü ve içindeki dosyaları silmek istediğinize emin misiniz?')) return; const {ok, data} = await safeFetch(`/api/admin/chapters/${id}`, {method: 'DELETE'}); if(ok && data.success) { alert('Bölüm silindi!'); loadData(); } else { alert(data.error); } }
-        
-        async function processImages(action) {
+        async function deleteSeriesAPI(id) { if(!confirm('Emin misiniz?')) return; const {ok} = await safeFetch(`/api/admin/series/${id}`, {method: 'DELETE'}); if(ok) loadData(); }
+        async function deleteChapterAPI(id) { if(!confirm('Emin misiniz?')) return; const {ok} = await safeFetch(`/api/admin/chapters/${id}`, {method: 'DELETE'}); if(ok) loadData(); }
+
+        /* =========================================================================
+           OOM KILLER VE TIMEOUT YOK EDİCİ: FRONTEND (İSTEMCİ) TABANLI GÖRSEL İŞLEME
+           ========================================================================= */
+        let progressIntervals = {};
+
+        async function processImagesJS(action) {
             const fileInput = document.getElementById(`files-${action}`);
             const files = fileInput.files;
             if(files.length === 0) return alert('Lütfen işlenecek görselleri seçin!');
 
             const btn = document.getElementById(`btn-${action}`);
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '⏳ ZİP Oluşturuluyor... (Bekleyin)';
-            btn.classList.add('opacity-50', 'pointer-events-none');
-
-            let filesArr = Array.from(files);
-            filesArr.sort((a, b) => {
-                let nameCompare = a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'});
-                if (nameCompare !== 0) return nameCompare;
-                return a.lastModified - b.lastModified;
-            });
-
-            const fd = new FormData();
-            fd.append('action', action);
-            for(let i=0; i<filesArr.length; i++) fd.append('files', filesArr[i]);
-            fd.append('slice_height', document.getElementById(`${action}-height`).value);
-
+            const btnText = document.getElementById(`text-${action}`);
+            const progressBar = document.getElementById(`progress-${action}`);
+            
+            const originalText = btnText.innerHTML;
+            btn.classList.add('opacity-80', 'pointer-events-none');
+            
             try {
-                const response = await fetch('/api/tools/process', { method: 'POST', body: fd });
-                if (!response.ok) {
-                    const data = await response.json();
-                    throw new Error(data.error || 'İşlem başarısız');
+                if (typeof JSZip === 'undefined') throw new Error("ZIP kütüphanesi yüklenemedi. Sayfayı yenileyin.");
+                const zip = new JSZip();
+                const sliceHeight = parseInt(document.getElementById(`${action}-height`).value);
+                
+                let filesArr = Array.from(files);
+                filesArr.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'}));
+
+                const loadImage = (file) => new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.onload = () => resolve(img);
+                    img.onerror = reject;
+                    img.src = URL.createObjectURL(file);
+                });
+
+                let counter = 1;
+                const updateProgress = (percent, text) => {
+                    progressBar.style.width = `${percent}%`;
+                    btnText.innerHTML = `⏳ ${text} (%${Math.round(percent)})`;
+                };
+
+                if (action === 'split') {
+                    for (let i = 0; i < filesArr.length; i++) {
+                        updateProgress((i / filesArr.length) * 50, "Görseller Okunuyor...");
+                        const img = await loadImage(filesArr[i]);
+                        let y = 0;
+                        while (y < img.height) {
+                            const h = Math.min(sliceHeight, img.height - y);
+                            const canvas = document.createElement('canvas');
+                            canvas.width = img.width;
+                            canvas.height = h;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, y, img.width, h, 0, 0, img.width, h);
+                            
+                            const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.95));
+                            zip.file(`${counter}.jpg`, blob);
+                            
+                            y += h;
+                            counter++;
+                        }
+                        URL.revokeObjectURL(img.src);
+                    }
+                } else if (action === 'merge') {
+                    updateProgress(10, "Görseller analiz ediliyor...");
+                    let imagesInfo = [];
+                    let totalHeight = 0;
+                    let maxWidth = 0;
+
+                    for (let i = 0; i < filesArr.length; i++) {
+                        const img = await loadImage(filesArr[i]);
+                        imagesInfo.push(img);
+                        totalHeight += img.height;
+                        if (img.width > maxWidth) maxWidth = img.width;
+                    }
+
+                    let remainingHeight = totalHeight;
+                    let currentCanvasY = 0;
+                    let canvasH = Math.min(sliceHeight, remainingHeight);
+                    
+                    let canvas = document.createElement('canvas');
+                    canvas.width = maxWidth;
+                    canvas.height = canvasH;
+                    let ctx = canvas.getContext('2d');
+
+                    let currentImgIndex = 0;
+                    let currentImgY = 0;
+
+                    while (remainingHeight > 0 && currentImgIndex < imagesInfo.length) {
+                        let progress = 10 + ((totalHeight - remainingHeight) / totalHeight) * 60;
+                        updateProgress(progress, "Tuvale Çiziliyor...");
+
+                        const img = imagesInfo[currentImgIndex];
+                        const spaceOnCanvas = canvasH - currentCanvasY;
+                        const remainingInImg = img.height - currentImgY;
+                        const takeH = Math.min(spaceOnCanvas, remainingInImg);
+
+                        ctx.drawImage(img, 0, currentImgY, img.width, takeH, 0, currentCanvasY, img.width, takeH);
+
+                        currentCanvasY += takeH;
+                        currentImgY += takeH;
+
+                        if (currentCanvasY >= canvasH) {
+                            const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.95));
+                            zip.file(`${counter}.jpg`, blob);
+                            counter++;
+                            
+                            remainingHeight -= canvasH;
+                            if (remainingHeight > 0) {
+                                canvasH = Math.min(sliceHeight, remainingHeight);
+                                canvas.width = maxWidth; 
+                                canvas.height = canvasH;
+                                ctx = canvas.getContext('2d');
+                                currentCanvasY = 0;
+                            }
+                        }
+
+                        if (currentImgY >= img.height) {
+                            URL.revokeObjectURL(img.src);
+                            currentImgIndex++;
+                            currentImgY = 0;
+                        }
+                    }
                 }
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
+
+                updateProgress(85, "ZİP Sıkıştırılıyor...");
+                const zipBlob = await zip.generateAsync({ 
+                    type: "blob", 
+                    compression: "STORE" 
+                }, function updateCallback(metadata) {
+                    updateProgress(85 + (metadata.percent * 0.15), "ZİP Oluşturuluyor...");
+                });
+
+                updateProgress(100, "✅ İndiriliyor!");
+                const url = window.URL.createObjectURL(zipBlob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = 'Averis_Fansub_Gorseller.zip';
+                a.download = `Averis_Fansub_${action === 'split' ? 'Ayir' : 'Birlestir'}.zip`;
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
                 window.URL.revokeObjectURL(url);
+                
                 fileInput.value = '';
-                alert('ZIP başarıyla indirildi!');
+                
             } catch (err) {
-                alert(err.message);
+                console.error(err);
+                alert("Hata: " + err.message + "\n(Tarayıcı belleği yetersiz gelmiş olabilir, daha düşük piksel seçin.)");
+                progressBar.style.width = '0%';
             } finally {
-                btn.innerHTML = originalText;
-                btn.classList.remove('opacity-50', 'pointer-events-none');
+                setTimeout(() => {
+                    btnText.innerHTML = originalText;
+                    btn.classList.remove('opacity-80', 'pointer-events-none');
+                    progressBar.style.width = '0%';
+                }, 3000);
             }
         }
 
