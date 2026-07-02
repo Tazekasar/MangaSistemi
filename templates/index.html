@@ -13,7 +13,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
     <style>
-        body { font-family: 'Urbanist', sans-serif; background-color: #0f172a; color: #e2e8f0; -webkit-tap-highlight-color: transparent; }
+        /* 🎯 ZOOM ENGELLEME CSS'İ */
+        body { font-family: 'Urbanist', sans-serif; background-color: #0f172a; color: #e2e8f0; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
         .handdrawn-border { border: 2px solid #334155; box-shadow: 3px 3px 0px #1e293b; }
         
         .lane-container { -webkit-overflow-scrolling: touch; padding-bottom: 12px; }
@@ -25,25 +26,22 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .progress-bar-bg { transition: width 0.3s ease-out; }
 
-        /* MOBİL GÖRÜNÜM DÜZELTMELERİ VE ZOOM ENGELLEMESİ */
+        /* 🎯 MOBİL İKİLİ GÖRÜNÜMÜN "KISA VE KUTU GİBİ" ŞIK HALİ */
         @media (max-width: 767px) {
-            /* iOS klavye zoomunu engeller */
             input, select, textarea { font-size: 16px !important; }
             
-            body.mobile-double .lane-container {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                gap: 0.5rem;
-            }
-            body.mobile-double .kanban-lane { padding: 0.75rem; }
-            body.mobile-double .handdrawn-border { padding: 0.5rem; }
-            body.mobile-double .lane-container .flex.gap-4.items-center { flex-direction: column; gap: 0.5rem; text-align: center; }
-            body.mobile-double .lane-container .flex.gap-4.items-center.pr-10 { padding-right: 0; }
-            body.mobile-double .lane-container .w-16.h-24 { width: 100%; height: 130px; border-radius: 0.5rem; }
-            body.mobile-double .lane-container h4 { font-size: 0.85rem; line-height: 1.1rem; }
-            body.mobile-double .lane-container p { font-size: 0.7rem; margin-bottom: 0.25rem; }
-            body.mobile-double .lane-container a { justify-content: center; }
-            body.mobile-double .lane-container .text-\\[10px\\] { font-size: 0.55rem; padding: 0.15rem 0.25rem; }
-            body.mobile-double .lane-container button, body.mobile-double .lane-container .text-\\[11px\\] { font-size: 0.65rem; padding: 0.4rem; }
+            body.mobile-double .lane-container { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
+            body.mobile-double .kanban-lane { padding: 0.5rem; }
+            body.mobile-double .handdrawn-border { padding: 0.5rem; flex-direction: column; gap: 0.4rem; }
+            body.mobile-double .flex.gap-4.items-center { flex-direction: row; gap: 0.4rem; align-items: start; text-align: left; }
+            body.mobile-double .w-16.h-24 { width: 40px; height: 60px; min-width: 40px; border-radius: 0.3rem; }
+            body.mobile-double h4 { font-size: 0.75rem; white-space: normal; line-height: 1.1; margin-bottom: 2px;}
+            body.mobile-double p { font-size: 0.65rem; margin-bottom: 2px;}
+            body.mobile-double .text-\\[10px\\] { font-size: 0.55rem; padding: 2px 4px; margin-top: 2px; }
+            body.mobile-double .text-xs { font-size: 0.65rem; }
+            body.mobile-double .mt-2.border-t { margin-top: 0.25rem; padding-top: 0.4rem; }
+            body.mobile-double button, body.mobile-double label { font-size: 0.6rem; padding: 4px; }
+            body.mobile-double .pr-10 { padding-right: 0; }
         }
     </style>
 </head>
@@ -99,9 +97,7 @@
                     <h3 class="text-xs font-bold text-emerald-400 uppercase">👑 Sistem Kontrol Paneli</h3>
                     <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 space-y-3">
                         <div class="text-[11px] font-bold text-emerald-400 uppercase border-b border-slate-700 pb-1">Ekip Üyeleri & Roller</div>
-                        
-                        <div id="user-management-list" class="space-y-2 max-h-40 overflow-y-auto pr-1"></div>
-                        
+                        <div id="user-management-list" class="space-y-2 max-h-64 overflow-y-auto pr-1"></div>
                         <div class="mt-3 pt-3 border-t border-slate-700 space-y-2">
                             <input type="text" id="new-user-name" placeholder="Kullanıcı Adı" class="w-full bg-slate-900 text-sm rounded-lg p-2.5 text-white border border-slate-700">
                             <input type="password" id="new-user-pass" placeholder="Şifre" class="w-full bg-slate-900 text-sm rounded-lg p-2.5 text-white border border-slate-700">
@@ -139,8 +135,8 @@
                     </div>
                     <div id="lane-PENDING_CLEANING" class="kanban-lane bg-slate-900/40 p-4 md:p-5 rounded-xl border border-slate-800/80 hidden transition-all duration-300">
                         <div onclick="toggleLane('PENDING_CLEANING')" class="cursor-pointer flex items-center gap-3 mb-2 select-none group border-b border-slate-800/50 pb-3">
-                            <div class="bg-slate-800 p-1.5 rounded-lg"><svg id="arrow-PENDING_CLEANING" class="w-5 h-5 text-teal-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg></div>
-                            <h3 class="text-base font-bold text-teal-400 uppercase">2. TEMİZLİK BEKLEYEN</h3>
+                            <div class="bg-slate-800 p-1.5 rounded-lg"><svg id="arrow-PENDING_CLEANING" class="w-5 h-5 text-cyan-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg></div>
+                            <h3 class="text-base font-bold text-cyan-400 uppercase">2. TEMİZLİK BEKLEYEN</h3>
                         </div>
                         <div id="container-PENDING_CLEANING" class="lane-container grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 mt-4 transition-all duration-300"></div>
                     </div>
@@ -207,7 +203,8 @@
                             
                             <label class="block">
                                 <span class="text-xs font-bold text-slate-300 block mb-1">Görselleri Seç (Çoklu Seçilebilir)</span>
-                                <input type="file" id="files-split" accept="image/*" multiple class="w-full text-sm text-slate-300 bg-slate-800 p-2.5 rounded-lg border border-slate-600 focus:border-teal-500">
+                                <input type="file" id="files-split" accept="image/*" multiple class="w-full text-sm text-slate-300 bg-slate-800 p-2.5 rounded-lg border border-slate-600 focus:border-teal-500" onchange="updateFileNames('files-split', 'names-split')">
+                                <div id="names-split" class="mt-2 text-xs text-teal-300 max-h-24 overflow-y-auto space-y-1"></div>
                             </label>
                             
                             <label class="block">
@@ -231,7 +228,8 @@
                             
                             <label class="block">
                                 <span class="text-xs font-bold text-slate-300 block mb-1">Sıralı Görselleri Seç</span>
-                                <input type="file" id="files-merge" accept="image/*" multiple class="w-full text-sm text-slate-300 bg-slate-800 p-2.5 rounded-lg border border-slate-600 focus:border-amber-500">
+                                <input type="file" id="files-merge" accept="image/*" multiple class="w-full text-sm text-slate-300 bg-slate-800 p-2.5 rounded-lg border border-slate-600 focus:border-amber-500" onchange="updateFileNames('files-merge', 'names-merge')">
+                                <div id="names-merge" class="mt-2 text-xs text-amber-300 max-h-24 overflow-y-auto space-y-1"></div>
                             </label>
                             
                             <label class="block">
@@ -304,22 +302,22 @@
 
         const STAGE_LABELS = {
             'PENDING_TRANSLATION': '<span class="text-amber-500">✏️ Çeviri</span>',
-            'PENDING_CLEANING': '<span class="text-teal-400">🧹 Temiz</span>',
+            'PENDING_CLEANING': '<span class="text-cyan-400">🧹 Temiz</span>',
             'PENDING_PROOFREADING': '<span class="text-blue-400">🔍 Redakt</span>',
-            'PENDING_TYPESETTING': '<span class="text-indigo-400">🔤 Dizgi</span>',
+            'PENDING_TYPESETTING': '<span class="text-purple-400">🔤 Dizgi</span>',
             'PENDING_PUBLISHING': '<span class="text-rose-400">👑 Yayın</span>',
             'PUBLISHED': '<span class="text-emerald-400">✅ Bitti</span>'
         };
 
         function getDetailedStatusHTML(ch) {
             if (ch.status === 'TRANS_CLEAN') {
-                if (ch.is_cleaned) return '<span class="text-teal-400 font-bold">Temizlik Bitti, <span class="text-amber-400">Çeviri Bekliyor</span></span>';
-                return '<span class="text-amber-400 font-bold">Çeviri <span class="text-slate-400">&</span> <span class="text-teal-400">Temizlik Bekliyor</span></span>';
+                if (ch.is_cleaned) return '<span class="text-cyan-400 font-bold">Temizlik Bitti, <span class="text-amber-400">Çeviri Bekliyor</span></span>';
+                return '<span class="text-amber-400 font-bold">Çeviri <span class="text-slate-400">&</span> <span class="text-cyan-400">Temizlik Bekliyor</span></span>';
             }
             if (ch.status === 'PROOF_CLEAN') {
                 if (ch.is_cleaned && !ch.is_proofread) return '<span class="text-emerald-400 font-bold">Çeviri & Temizlik Bitti, <span class="text-blue-400">Redakte Bekliyor</span></span>';
-                if (!ch.is_cleaned && ch.is_proofread) return '<span class="text-blue-500 font-bold">Çeviri & Redakte Bitti, <span class="text-teal-400">Temizlik Bekliyor</span></span>';
-                return '<span class="text-amber-500 font-bold">Çeviri Bitti, <span class="text-blue-400">Redakte</span> <span class="text-slate-400">&</span> <span class="text-teal-400">Temizlik Bekliyor</span></span>';
+                if (!ch.is_cleaned && ch.is_proofread) return '<span class="text-blue-500 font-bold">Çeviri & Redakte Bitti, <span class="text-cyan-400">Temizlik Bekliyor</span></span>';
+                return '<span class="text-amber-500 font-bold">Çeviri Bitti, <span class="text-blue-400">Redakte</span> <span class="text-slate-400">&</span> <span class="text-cyan-400">Temizlik Bekliyor</span></span>';
             }
             if (ch.status === 'PENDING_TYPESETTING') return '<span class="text-purple-400 font-bold">Dizgi Bekliyor</span>';
             if (ch.status === 'PENDING_PUBLISHING') return '<span class="text-rose-400 font-bold">Yayın Bekliyor</span>';
@@ -359,6 +357,22 @@
             if (document.getElementById(`nav-${viewName}`)) document.getElementById(`nav-${viewName}`).classList.add('active');
             if (document.getElementById(`nav-${viewName}-mobile`)) document.getElementById(`nav-${viewName}-mobile`).classList.add('active');
             if(viewName === 'stats') loadStats();
+        }
+
+        // 🎯 ARAÇLAR KISMINDA SEÇİLEN DOSYALARIN İSİMLERİNİ GÖSTERME
+        function updateFileNames(inputId, displayId) {
+            const input = document.getElementById(inputId);
+            const display = document.getElementById(displayId);
+            if(!input.files.length) {
+                display.innerHTML = '';
+                return;
+            }
+            let html = '<div class="pt-2 border-t border-slate-700/50 mt-2">';
+            for(let i=0; i<input.files.length; i++) {
+                html += `<div class="truncate">📎 ${input.files[i].name}</div>`;
+            }
+            html += '</div>';
+            display.innerHTML = html;
         }
 
         function renderNavigation(roles) {
@@ -447,8 +461,8 @@
                     <div class="w-full bg-[#161d2e] rounded-lg p-2 md:p-4 text-xs md:text-sm space-y-1">
                         <div class="flex justify-between border-b border-slate-800 pb-1"><span class="text-amber-500">✏️ Çeviri</span><span class="text-white">${u.tasks['PENDING_TRANSLATION']||0}</span></div>
                         <div class="flex justify-between border-b border-slate-800 pb-1"><span class="text-blue-400">🔍 Redakt</span><span class="text-white">${u.tasks['PENDING_PROOFREADING']||0}</span></div>
-                        <div class="flex justify-between border-b border-slate-800 pb-1"><span class="text-teal-400">🧹 Temiz</span><span class="text-white">${u.tasks['PENDING_CLEANING']||0}</span></div>
-                        <div class="flex justify-between border-b border-slate-800 pb-1"><span class="text-indigo-400">🔤 Dizgi</span><span class="text-white">${u.tasks['PENDING_TYPESETTING']||0}</span></div>
+                        <div class="flex justify-between border-b border-slate-800 pb-1"><span class="text-cyan-400">🧹 Temiz</span><span class="text-white">${u.tasks['PENDING_CLEANING']||0}</span></div>
+                        <div class="flex justify-between border-b border-slate-800 pb-1"><span class="text-purple-400">🔤 Dizgi</span><span class="text-white">${u.tasks['PENDING_TYPESETTING']||0}</span></div>
                         <div class="flex justify-between pt-1 font-bold text-emerald-400"><span>🏆 Toplam</span><span>${total}</span></div>
                     </div></div>`;
             });
@@ -465,7 +479,7 @@
         }
 
         /* -------------------------------------------------------------
-           EKSİKSİZ KULLANICI YÖNETİM PANELİ (ADMİNLER İÇİN)
+           🎯 KULLANICI YÖNETİM PANELİ (ADMİNLER İÇİN KUSURSUZ GERİ DÖNDÜ)
            ------------------------------------------------------------- */
         function renderUserManagement() {
             const listDiv = document.getElementById('user-management-list'); listDiv.innerHTML = '';
@@ -486,13 +500,17 @@
         }
 
         /* -------------------------------------------------------------
-           KART RENKLERİ VE KANBAN MİMARİSİ
+           🎯 KART RENKLERİ TAM İSTEDİĞİN GİBİ AYARLANDI
            ------------------------------------------------------------- */
         function renderUI() {
             const myRoles = me.roles.split(','); const isCtrl = myRoles.includes('Controller');
+            
+            // ADMİN PANELİ KONTROLÜ
+            document.getElementById('admin-panel').classList.toggle('hidden', !isCtrl);
+            
             ['PENDING_TRANSLATION', 'PENDING_CLEANING', 'PENDING_PROOFREADING', 'PENDING_TYPESETTING', 'PENDING_PUBLISHING'].forEach(stage => document.getElementById(`lane-${stage}`).classList.toggle('hidden', !(isCtrl || myRoles.includes(ROLE_MAP_TASK[stage.split('_')[1]]))));
             const hideBtn = document.getElementById('hide-assigned-btn');
-            if (hideBtn) { hideBtn.innerHTML = hideAssigned ? '👁️ Doluları Göster' : '🙈 Doluları Gizle'; hideBtn.className = `bg-slate-800 text-xs font-bold px-3 py-2 rounded-lg border border-slate-700 ${hideAssigned ? 'text-emerald-400' : 'text-slate-300'}`; }
+            if (hideBtn) { hideBtn.innerHTML = hideAssigned ? '👁️ Doluları Göster' : '🙈 Doluları Gizle'; hideBtn.className = `bg-slate-800 text-xs font-bold px-3 py-2 rounded-lg border border-slate-700 ${hideAssigned ? 'text-emerald-400' : 'text-slate-300'} transition-all`; }
             document.querySelectorAll('.lane-container').forEach(el => el.innerHTML = ''); document.getElementById('my-tasks-container').innerHTML = '';
 
             gData.chapters.forEach(ch => {
@@ -514,22 +532,22 @@
                     if (laneEl) {
                         let actHtml = assigneeId ? (assigneeId === me.id ? `<span class="text-[11px] font-bold text-emerald-400 bg-emerald-950 px-3 py-1.5 rounded-lg w-full text-center border border-emerald-900">SİZDE</span>` : `<span class="text-[11px] font-bold text-slate-400 bg-slate-800 px-3 py-1.5 rounded-lg w-full text-center border border-slate-700 truncate">ALINDI (${assigneeName})</span>`) : (isCtrl || myRoles.includes(ROLE_MAP_TASK[task]) ? `<button onclick="claimChapter(${ch.id}, '${task}')" class="text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 px-3 py-2 rounded-lg w-full active:scale-95 transition-transform">GÖREVİ AL</button>` : `<span class="text-[11px] text-slate-500 text-center w-full bg-slate-800/50 py-1.5 rounded-lg">Yetkisiz</span>`);
                         
-                        let delHtml = isCtrl ? `<button onclick="deleteChapterAPI(${ch.id})" class="absolute top-3 right-3 text-rose-500 bg-slate-800 hover:bg-rose-600 hover:text-white p-2 rounded-lg border border-slate-700 active:scale-95 transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>` : '';
-                        let cvrHtml = ch.cover_filename ? `<img src="/covers/${ch.cover_filename}" class="w-16 h-24 object-cover rounded border border-slate-700 shadow-inner">` : '<div class="w-16 h-24 bg-slate-800 rounded border border-slate-700 flex items-center justify-center text-[10px] text-slate-500 font-bold">YOK</div>';
+                        let delHtml = isCtrl ? `<button onclick="deleteChapterAPI(${ch.id})" class="absolute top-3 right-3 text-rose-500 bg-slate-800 hover:bg-rose-600 hover:text-white p-2 rounded-lg border border-slate-700 active:scale-95 transition-colors shadow-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>` : '';
+                        let cvrHtml = ch.cover_filename ? `<img src="/covers/${ch.cover_filename}" class="w-16 h-24 object-cover rounded border border-slate-700 shadow-inner">` : '<div class="w-16 h-24 bg-slate-800 rounded border border-slate-700 flex items-center justify-center text-[10px] text-slate-500 font-bold shadow-inner">YOK</div>';
                         
                         let pbHtml = '';
-                        if (ch.status === 'TRANS_CLEAN') { if (task === 'TRANSLATION' && ch.is_cleaned) { pbHtml = '<div class="text-[10px] font-bold text-teal-400 bg-teal-950/50 border border-teal-800 px-2 py-1 rounded mt-1 mb-2 inline-block shadow-sm">✅ Temizlik Bitti</div>'; } } 
-                        else if (ch.status === 'PROOF_CLEAN') { if (task === 'PROOFREADING' && ch.is_cleaned) { pbHtml = '<div class="text-[10px] font-bold text-teal-400 bg-teal-950/50 border border-teal-800 px-2 py-1 rounded mt-1 mb-2 inline-block shadow-sm">✅ Temizlik Bitti</div>'; } else if (task === 'CLEANING' && ch.is_proofread) { pbHtml = '<div class="text-[10px] font-bold text-blue-400 bg-blue-950/50 border border-blue-800 px-2 py-1 rounded mt-1 mb-2 inline-block shadow-sm">✅ Redakte Bitti</div>'; } else if (task === 'CLEANING') { pbHtml = '<div class="text-[10px] font-bold text-amber-400 bg-amber-950/50 border border-amber-800 px-2 py-1 rounded mt-1 mb-2 inline-block shadow-sm">✅ Çeviri Bitti</div>'; } }
+                        if (ch.status === 'TRANS_CLEAN') { if (task === 'TRANSLATION' && ch.is_cleaned) { pbHtml = '<div class="text-[10px] font-bold text-cyan-400 bg-cyan-950/50 border border-cyan-800 px-2 py-1 rounded mt-1 mb-2 inline-block shadow-sm">✅ Temizlik Bitti</div>'; } } 
+                        else if (ch.status === 'PROOF_CLEAN') { if (task === 'PROOFREADING' && ch.is_cleaned) { pbHtml = '<div class="text-[10px] font-bold text-cyan-400 bg-cyan-950/50 border border-cyan-800 px-2 py-1 rounded mt-1 mb-2 inline-block shadow-sm">✅ Temizlik Bitti</div>'; } else if (task === 'CLEANING' && ch.is_proofread) { pbHtml = '<div class="text-[10px] font-bold text-blue-400 bg-blue-950/50 border border-blue-800 px-2 py-1 rounded mt-1 mb-2 inline-block shadow-sm">✅ Redakte Bitti</div>'; } else if (task === 'CLEANING') { pbHtml = '<div class="text-[10px] font-bold text-amber-400 bg-amber-950/50 border border-amber-800 px-2 py-1 rounded mt-1 mb-2 inline-block shadow-sm">✅ Çeviri Bitti</div>'; } }
                         
-                        const srcLink = ch.source_link ? `<a href="${ch.source_link}" target="_blank" class="text-xs text-blue-400 hover:text-blue-300 underline truncate block mt-1 flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg> Kaynak</a>` : '';
+                        const srcLink = ch.source_link ? `<a href="${ch.source_link}" target="_blank" class="text-[11px] text-blue-400 hover:text-blue-300 underline truncate block mt-1 flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg> Kaynak</a>` : '';
 
-                        // RENKLENDİRME İŞLEMİ (KANBAN KARTLARI)
-                        let cardBgClass = 'bg-slate-900';
-                        if (task === 'TRANSLATION') cardBgClass = 'bg-amber-950/40 border-amber-800/80'; // Sarımtırak
+                        // 🎯 KARTLAR İÇİN TAM İSTEDİĞİN RENKLENDİRME (KANBAN)
+                        let cardBgClass = 'bg-slate-900 border-slate-700';
+                        if (task === 'TRANSLATION') cardBgClass = 'bg-amber-950/40 border-amber-800/80'; // Sarı
                         else if (task === 'CLEANING') cardBgClass = 'bg-cyan-950/40 border-cyan-800/80'; // Açık Mavi
                         else if (task === 'PROOFREADING') cardBgClass = 'bg-blue-950/40 border-blue-800/80'; // Koyu Mavi
                         else if (task === 'TYPESETTING') cardBgClass = 'bg-purple-950/40 border-purple-800/80'; // Mor
-                        else if (task === 'PUBLISHING') cardBgClass = 'bg-rose-950/40 border-rose-800/80'; // Kırmızı siyah arası
+                        else if (task === 'PUBLISHING') cardBgClass = 'bg-rose-950/40 border-rose-800/80'; // Kırmızı Siyah arası
                         
                         laneEl.innerHTML += `
                             <div class="handdrawn-border ${cardBgClass} p-4 md:p-5 rounded-xl flex flex-col gap-3 relative hover:opacity-90 transition-opacity shadow-md w-full">
@@ -551,16 +569,16 @@
         }
 
         function createSidebarCard(ch, task, assigneeId) {
-            // RENKLENDİRME İŞLEMİ (SİDEBAR KARTLARI)
-            let sbBgClass = 'bg-slate-800';
-            if (task === 'TRANSLATION') sbBgClass = 'bg-amber-950/30 border-amber-900'; 
-            else if (task === 'CLEANING') sbBgClass = 'bg-cyan-950/30 border-cyan-900'; 
-            else if (task === 'PROOFREADING') sbBgClass = 'bg-blue-950/30 border-blue-900'; 
-            else if (task === 'TYPESETTING') sbBgClass = 'bg-purple-950/30 border-purple-900'; 
-            else if (task === 'PUBLISHING') sbBgClass = 'bg-rose-950/30 border-rose-900';
+            // 🎯 SİDEBAR KARTLARI İÇİN UYUMLU RENKLENDİRME
+            let sbBgClass = 'bg-slate-800 border-slate-700';
+            if (task === 'TRANSLATION') sbBgClass = 'bg-amber-950/30 border-amber-900/60'; 
+            else if (task === 'CLEANING') sbBgClass = 'bg-cyan-950/30 border-cyan-900/60'; 
+            else if (task === 'PROOFREADING') sbBgClass = 'bg-blue-950/30 border-blue-900/60'; 
+            else if (task === 'TYPESETTING') sbBgClass = 'bg-purple-950/30 border-purple-900/60'; 
+            else if (task === 'PUBLISHING') sbBgClass = 'bg-rose-950/30 border-rose-900/60';
 
             const div = document.createElement('div'); 
-            div.className = `${sbBgClass} border rounded-xl p-4 flex flex-col gap-3 relative shadow-lg mb-4`;
+            div.className = `${sbBgClass} rounded-xl p-4 flex flex-col gap-3 relative shadow-lg mb-4`;
             
             const stageF = 'PENDING_' + task; 
             const myFiles = ch.files.filter(f => f.stage === stageF); 
@@ -568,8 +586,7 @@
             const needsF = (task !== 'PUBLISHING' && !isCtrl); 
             const hasF = myFiles.length > 0;
             
-            // YÜKLENEN DOSYA LİSTESİ (ANINDA GÖSTERİM)
-            let fHtml = `<div id="f-${ch.id}-${task}" class="bg-slate-900/60 p-3 rounded-lg text-[10px] border border-slate-700/50">`;
+            let fHtml = `<div id="f-${ch.id}-${task}" class="bg-slate-950/50 p-3 rounded-lg text-[10px] border border-slate-700/50 mt-1">`;
             if (hasF) {
                 fHtml += `<div class="text-[11px] font-bold text-slate-400 border-b border-slate-700/50 pb-1 mb-2">Eklenen Dosyalar</div>`;
                 fHtml += myFiles.map(f=>`<div class="text-emerald-400 truncate mb-1">✓ ${f.clean_filename}</div>`).join('');
@@ -591,23 +608,21 @@
             fHtml += `</div>`;
 
             let dHtml = '';
-            if (task === 'PROOFREADING') dHtml = `<button onclick="window.open('/api/chapters/download/${ch.id}/PENDING_TRANSLATION')" class="text-[11px] font-bold bg-slate-700 hover:bg-slate-600 transition-colors px-3 py-2 rounded-lg text-amber-300 w-full mb-2 active:scale-95 shadow-sm">📥 Çeviri .txt İndir</button>`;
+            if (task === 'PROOFREADING') dHtml = `<button onclick="window.open('/api/chapters/download/${ch.id}/PENDING_TRANSLATION')" class="text-[11px] font-bold bg-slate-700 hover:bg-slate-600 transition-colors px-3 py-2 rounded-lg text-amber-300 w-full mb-2 active:scale-95 shadow-sm">📥 Çeviri Metni İndir</button>`;
             else if (task === 'TYPESETTING') {
-                dHtml = `<button onclick="window.open('/api/chapters/download/${ch.id}/PENDING_PROOFREADING')" class="text-[11px] font-bold bg-slate-700 hover:bg-slate-600 transition-colors px-3 py-2 rounded-lg text-blue-300 w-full mb-2 active:scale-95 shadow-sm">📥 Redakte Edilmiş Çeviri (.txt)</button>
-                         <button onclick="window.open('/api/chapters/download/${ch.id}/PENDING_CLEANING')" class="text-[11px] font-bold bg-slate-700 hover:bg-slate-600 transition-colors px-3 py-2 rounded-lg text-teal-300 w-full mb-2 active:scale-95 shadow-sm">📥 Temiz Görseller (ZIP)</button>`;
+                dHtml = `<button onclick="window.open('/api/chapters/download/${ch.id}/PENDING_PROOFREADING')" class="text-[11px] font-bold bg-slate-700 hover:bg-slate-600 transition-colors px-3 py-2 rounded-lg text-blue-300 w-full mb-2 active:scale-95 shadow-sm">📥 Redakte Edilmiş Metni İndir</button>
+                         <button onclick="window.open('/api/chapters/download/${ch.id}/PENDING_CLEANING')" class="text-[11px] font-bold bg-slate-700 hover:bg-slate-600 transition-colors px-3 py-2 rounded-lg text-cyan-300 w-full mb-2 active:scale-95 shadow-sm">📥 Temiz Görselleri (ZIP) İndir</button>`;
             } 
-            // KONTROLCÜLER İÇİN TÜM GEÇMİŞİ İNDİR BUTONU GERİ GELDİ
             else if (task === 'PUBLISHING') {
                 dHtml += `<button onclick="window.open('/api/chapters/download/${ch.id}/ALL')" class="text-[11px] font-bold bg-rose-700 hover:bg-rose-600 transition-colors px-3 py-3 rounded-lg text-white w-full text-center mb-3 shadow-lg active:scale-95 border border-rose-500">📦 TÜM GEÇMİŞİ İNDİR (ZIP)</button>`;
             }
 
-            // DOSYA UZANTI KISITLAMALARI (ACCEPT) GERİ GELDİ
-            let uploadAccept = '.png,.jpg,.jpeg,.webp';
-            if(task === 'TRANSLATION' || task === 'PROOFREADING') uploadAccept = '.txt,.doc,.docx';
+            // 🎯 "BIRAK" BUTONU YAYINLAMA AŞAMASINA DA GERİ GELDİ!
+            const releaseBtn = `<button onclick="releaseChapter(${ch.id}, '${task}')" class="absolute top-3 right-3 text-[10px] font-bold text-rose-300 hover:text-white bg-rose-950 hover:bg-rose-700 px-3 py-1.5 rounded-lg transition-colors border border-rose-800/50 shadow-sm z-10">❌ Bırak</button>`;
 
             let actionBtn = `
                 <div class="flex gap-2 items-center mt-2">
-                    <input type="file" id="fi-${ch.id}-${task}" accept="${uploadAccept}" multiple class="hidden" onchange="uploadMultipleFiles(${ch.id}, '${task}')">
+                    <input type="file" id="fi-${ch.id}-${task}" multiple class="hidden" onchange="uploadMultipleFiles(${ch.id}, '${task}')">
                     <label id="upload-label-${ch.id}-${task}" for="fi-${ch.id}-${task}" class="relative overflow-hidden bg-slate-700 hover:bg-slate-600 text-xs px-2 py-2.5 rounded-lg text-center flex-1 cursor-pointer transition-colors shadow-sm">
                         <div id="prog-up-${ch.id}-${task}" class="progress-bar-bg absolute top-0 left-0 h-full bg-emerald-600/80" style="width:0%"></div>
                         <span id="text-up-${ch.id}-${task}" class="relative z-10 text-white font-bold">📎 Yükle</span>
@@ -616,11 +631,11 @@
                 </div>`;
             if (task === 'PUBLISHING') actionBtn = `<button onclick="submitStage(${ch.id}, '${task}')" class="bg-emerald-600 hover:bg-emerald-500 w-full text-white text-xs font-bold px-4 py-3 rounded-lg active:scale-95 transition-transform shadow-md border border-emerald-400 mt-2">✅ YAYINLANDI İŞARETLE</button>`;
 
-            const cvrHtml = ch.cover_filename ? `<img src="/covers/${ch.cover_filename}" class="w-14 h-20 object-cover rounded-lg border border-slate-600/50">` : '<div class="w-14 h-20 bg-slate-900 rounded-lg flex items-center justify-center text-[10px] font-bold text-slate-600 border border-slate-700/50">YOK</div>';
-            const srcLink = ch.source_link ? `<a href="${ch.source_link}" target="_blank" class="text-[11px] text-blue-400 hover:text-blue-300 underline block mt-2 mb-2 flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg> Kaynağa Git</a>` : '';
+            const cvrHtml = ch.cover_filename ? `<img src="/covers/${ch.cover_filename}" class="w-14 h-20 object-cover rounded-lg border border-slate-600/50 shadow-inner">` : '<div class="w-14 h-20 bg-slate-900 rounded-lg flex items-center justify-center text-[10px] font-bold text-slate-600 border border-slate-700/50 shadow-inner">YOK</div>';
+            const srcLink = ch.source_link ? `<a href="${ch.source_link}" target="_blank" class="text-[11px] text-blue-400 hover:text-blue-300 underline block mt-2 mb-1 flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg> Kaynağa Git</a>` : '';
 
             div.innerHTML = `
-                ${task !== 'PUBLISHING' ? `<button onclick="releaseChapter(${ch.id}, '${task}')" class="absolute top-3 right-3 text-[10px] font-bold text-rose-300 hover:text-white bg-rose-950 hover:bg-rose-700 px-3 py-1.5 rounded-lg transition-colors border border-rose-800/50 shadow-sm">❌ Bırak</button>` : ''}
+                ${releaseBtn}
                 <div class="flex gap-4 pr-16 items-start">
                     <div class="shrink-0">${cvrHtml}</div>
                     <div class="min-w-0 pt-1">
@@ -640,26 +655,41 @@
         function renderPublished() {
             const grid = document.getElementById('published-grid'); grid.innerHTML = ''; const pub = gData.chapters.filter(c => c.status === 'PUBLISHED');
             if(pub.length === 0) return grid.innerHTML = '<div class="text-slate-500 italic col-span-full bg-slate-900 p-4 rounded-xl text-center border border-slate-800">Henüz yayınlanmış bölüm yok.</div>';
-            pub.forEach(ch => grid.innerHTML += `<div class="bg-slate-900 border border-slate-700 rounded-xl p-5 flex gap-4 items-center hover:bg-slate-800 shadow-md"><div class="shrink-0 w-16 h-24">${ch.cover_filename?`<img src="/covers/${ch.cover_filename}" class="w-full h-full object-cover rounded shadow-inner">`:'<div class="w-full h-full bg-slate-800 rounded border border-slate-700"></div>'}</div><div class="flex-1 min-w-0"><h3 class="text-white font-bold text-lg truncate">${ch.series_title}</h3><p class="text-slate-400 text-sm font-semibold mb-3">Bölüm ${ch.chapter_number}</p><span class="text-emerald-400 text-xs font-bold bg-emerald-950 px-3 py-1.5 rounded-lg shadow-sm border border-emerald-800">✅ Yayınlandı</span></div></div>`);
+            pub.forEach(ch => grid.innerHTML += `<div class="bg-slate-900 border border-slate-700 rounded-xl p-5 flex gap-4 items-center hover:bg-slate-800 shadow-md"><div class="shrink-0 w-16 h-24">${ch.cover_filename?`<img src="/covers/${ch.cover_filename}" class="w-full h-full object-cover rounded shadow-inner">`:'<div class="w-full h-full bg-slate-800 rounded border border-slate-700 shadow-inner"></div>'}</div><div class="flex-1 min-w-0"><h3 class="text-white font-bold text-lg truncate">${ch.series_title}</h3><p class="text-slate-400 text-sm font-semibold mb-3">Bölüm ${ch.chapter_number}</p><span class="text-emerald-400 text-xs font-bold bg-emerald-950 px-3 py-1.5 rounded-lg shadow-sm border border-emerald-800">✅ Yayınlandı</span></div></div>`);
         }
 
         function renderSeriesAdmin() {
             const list = document.getElementById('admin-series-list'); list.innerHTML = '';
             gData.series.forEach(s => {
                 const s_ch = gData.chapters.filter(c => c.series_id === s.id);
-                let chHtml = s_ch.map(c => `<div class="flex justify-between items-center bg-slate-950 p-3 rounded-lg mt-3 border border-slate-800 ml-2 md:ml-6"><span class="text-sm text-slate-300 font-semibold">Bölüm ${c.chapter_number} <span class="text-xs text-slate-500 ml-2 block sm:inline font-normal">(Durum: ${getDetailedStatusHTML(c)})</span></span><button onclick="deleteChapterAPI(${c.id})" class="text-xs bg-rose-700 hover:bg-rose-600 px-4 py-2 rounded-lg text-white font-bold transition-transform active:scale-95 shadow-sm border border-rose-900">Bölümü Sil</button></div>`).join('');
-                list.innerHTML += `<div class="bg-slate-900 p-4 md:p-5 rounded-xl border border-slate-700 shadow-md"><div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4"><div class="flex items-center gap-4"><div class="w-12 h-16 shrink-0">${s.cover_filename?`<img src="/covers/${s.cover_filename}" class="w-full h-full object-cover rounded-lg border border-slate-600">`:'<div class="w-full h-full bg-slate-800 rounded-lg"></div>'}</div><span class="font-bold text-white text-lg">${s.title}</span></div><button onclick="deleteSeriesAPI(${s.id})" class="text-sm bg-rose-800 hover:bg-rose-700 px-4 py-2.5 rounded-lg text-white font-bold transition-transform active:scale-95 shadow-sm border border-rose-900">🗑️ Tüm Seriyi Sil</button></div><div class="mt-4 border-t border-slate-800 pt-2">${chHtml||'<div class="text-xs text-slate-500 italic ml-2 md:ml-6 mt-3">Bölüm yok.</div>'}</div></div>`;
+                let chHtml = s_ch.map(c => `<div class="flex justify-between items-center bg-slate-950 p-3 rounded-lg mt-3 border border-slate-800 ml-2 md:ml-6"><span class="text-sm text-slate-300 font-semibold">Bölüm ${c.chapter_number} <span class="text-xs text-slate-500 ml-2 block sm:inline mt-1 sm:mt-0 font-normal">(Durum: ${getDetailedStatusHTML(c)})</span></span><button onclick="deleteChapterAPI(${c.id})" class="text-xs bg-rose-700 hover:bg-rose-600 px-4 py-2 rounded-lg text-white font-bold transition-transform active:scale-95 shadow-sm border border-rose-900">Bölümü Sil</button></div>`).join('');
+                list.innerHTML += `<div class="bg-slate-900 p-4 md:p-5 rounded-xl border border-slate-700 shadow-md"><div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4"><div class="flex items-center gap-4"><div class="w-12 h-16 shrink-0">${s.cover_filename?`<img src="/covers/${s.cover_filename}" class="w-full h-full object-cover rounded-lg border border-slate-600 shadow-inner">`:'<div class="w-full h-full bg-slate-800 rounded-lg shadow-inner"></div>'}</div><span class="font-bold text-white text-lg md:text-xl">${s.title}</span></div><button onclick="deleteSeriesAPI(${s.id})" class="text-sm bg-rose-800 hover:bg-rose-700 text-white px-4 py-2.5 rounded-lg font-bold transition-transform active:scale-95 shadow-sm border border-rose-900 sm:w-auto w-full">🗑️ Tüm Seriyi Sil</button></div><div class="mt-4 border-t border-slate-800 pt-2">${chHtml||'<div class="text-xs text-slate-500 ml-2 md:ml-6 mt-3 italic">Bu seride henüz bölüm yok.</div>'}</div></div>`;
             });
         }
 
         async function claimChapter(id, task) { const {ok, data} = await safeFetch(`/api/chapters/claim/${id}/${task}`, {method: 'POST'}); if(ok && data.success) loadData(); else alert(data.error); }
         async function releaseChapter(id, task) { if(!confirm("Görevi bırakmak istediğinize emin misiniz?")) return; const {ok, data} = await safeFetch(`/api/chapters/release/${id}/${task}`, {method: 'POST'}); if(ok && data.success) loadData(); else alert(data.error); }
         
-        // CANLI YÜKLEME ÇUBUĞU VE DOSYA İSİMLERİNİ GÖSTERME (AJAX/XHR SİSTEMİ)
+        // 🎯 KATI DOSYA UZANTI DENETİMİ (HTML ACCEPT YERİNE JS İLE KESİN ENGEL)
         function uploadMultipleFiles(id, task) {
             const input = document.getElementById(`fi-${id}-${task}`);
             const files = input.files;
             if (!files.length) return;
+
+            // Dosya Uzantısı Kuralı!
+            let allowedExt = ['png', 'jpg', 'jpeg', 'webp'];
+            if (task === 'TRANSLATION' || task === 'PROOFREADING') {
+                allowedExt = ['txt', 'doc', 'docx'];
+            }
+            
+            for(let i = 0; i < files.length; i++) {
+                const ext = files[i].name.split('.').pop().toLowerCase();
+                if (!allowedExt.includes(ext)) {
+                    alert(`🚨 HATA: Yüklemeye çalıştığınız dosyanın türü yanlış!\n\n${task === 'TRANSLATION' || task === 'PROOFREADING' ? 'Çevirmen ve Redaktörler sadece Metin (.txt, .doc)' : 'Temizlikçi ve Dizgiciler sadece Resim (.jpg, .png, .webp)'} yükleyebilir.`);
+                    input.value = '';
+                    return; // İŞLEMİ ANINDA İPTAL ET
+                }
+            }
 
             const uploadLabel = document.getElementById(`upload-label-${id}-${task}`);
             const uploadText = document.getElementById(`text-up-${id}-${task}`);
@@ -670,7 +700,6 @@
             uploadLabel.classList.add('pointer-events-none');
             if(submitBtn) submitBtn.classList.add('opacity-50', 'pointer-events-none');
             
-            // ÖNCE DOSYA İSİMLERİNİ ANİMASYONLU YAZDIR
             let tempHtml = '<div class="text-[11px] font-bold text-slate-400 border-b border-slate-700/50 pb-1 mb-2">Sunucuya Gönderiliyor...</div>';
             for(let i=0; i<files.length; i++) tempHtml += `<div class="text-[10px] text-amber-400 truncate animate-pulse mb-1">⏳ ${files[i].name}</div>`;
             filesContainer.innerHTML = tempHtml;
@@ -681,7 +710,6 @@
             const xhr = new XMLHttpRequest();
             xhr.open('POST', `/api/chapters/upload/${id}/${task}`, true);
 
-            // İLERLEME ÇUBUĞUNU DOLDUR
             xhr.upload.onprogress = function(e) {
                 if (e.lengthComputable) {
                     const percentComplete = (e.loaded / e.total) * 100;
@@ -757,9 +785,6 @@
         async function deleteSeriesAPI(id) { if(!confirm('DİKKAT: Bu seriyi, tüm bölümlerini ve yüklenen dosyaları silmek istediğinize emin misiniz?')) return; const {ok} = await safeFetch(`/api/admin/series/${id}`, {method: 'DELETE'}); if(ok) loadData(); }
         async function deleteChapterAPI(id) { if(!confirm('DİKKAT: Bölümü ve içindeki dosyaları silmek istediğinize emin misiniz?')) return; const {ok} = await safeFetch(`/api/admin/chapters/${id}`, {method: 'DELETE'}); if(ok) loadData(); }
 
-        /* =========================================================================
-           OOM KILLER VE TIMEOUT YOK EDİCİ: FRONTEND (İSTEMCİ) TABANLI GÖRSEL İŞLEME
-           ========================================================================= */
         let progressIntervals = {};
 
         async function processImagesJS(action) {
@@ -897,6 +922,7 @@
                 window.URL.revokeObjectURL(url);
                 
                 fileInput.value = '';
+                document.getElementById(`names-${action}`).innerHTML = ''; // Dosya isimlerini temizle
                 
             } catch (err) {
                 console.error(err);
