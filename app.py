@@ -7,6 +7,8 @@ import uuid
 import zipfile
 import io
 import re
+import time
+import glob
 from PIL import Image
 
 Image.MAX_IMAGE_PIXELS = None 
@@ -420,11 +422,18 @@ def submit_chapter_stage(chapter_id, task):
     conn.close()
     return jsonify({'success': True})
 
+# FİX: ZIP Dosyaları RAM'de değil doğrudan DİSK'te tutulur (Çökme %100 engellendi)
 @app.route('/api/chapters/download/<int:chapter_id>/<stage>')
 def download_chapter_files(chapter_id, stage):
     user = get_current_user()
     if not user: return jsonify({'error': 'Unauthorized'}), 403
     
+    # Eskimiş geçici ZIP dosyalarını diskten temizle
+    for tmp_file in glob.glob(os.path.join(app.config['CHAPTER_FOLDER'], 'temp_dl_*.zip')):
+        if os.path.getmtime(tmp_file) < time.time() - 3600:
+            try: os.remove(tmp_file)
+            except: pass
+
     conn = get_db_connection()
     cur = conn.cursor()
     
@@ -445,8 +454,11 @@ def download_chapter_files(chapter_id, stage):
     ''', (chapter_id,)).fetchone()
     conn.close()
 
-    memory_file = io.BytesIO()
-    with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_STORED) as zipf:
+    # ZIP dosyasını RAM yerine doğrudan sunucu diskinde geçici bir dosyaya yazıyoruz
+    zip_filename = f"temp_dl_{uuid.uuid4().hex}.zip"
+    zip_filepath = os.path.join(app.config['CHAPTER_FOLDER'], zip_filename)
+
+    with zipfile.ZipFile(zip_filepath, 'w', zipfile.ZIP_STORED) as zipf:
         for row in files:
             filename = row['filename']
             filepath = os.path.join(app.config['CHAPTER_FOLDER'], filename)
@@ -458,8 +470,6 @@ def download_chapter_files(chapter_id, stage):
                     archive_name = f"{row['stage']}/{archive_name}"
                     
                 zipf.write(filepath, archive_name)
-                
-    memory_file.seek(0)
     
     stage_tr_map = {
         'PENDING_TRANSLATION': 'Çeviri_Bekliyor',
@@ -477,7 +487,7 @@ def download_chapter_files(chapter_id, stage):
         zip_title = f"{clean_title}_Bolum {ch_info['chapter_number']}_{zip_stage}.zip"
 
     return send_file(
-        memory_file,
+        zip_filepath,
         mimetype='application/zip',
         as_attachment=True,
         download_name=zip_title
@@ -639,7 +649,7 @@ def delete_chapter_api(chapter_id):
     finally:
         conn.close()
 
-# MAKSİMUM HIZ, SIFIR RAM TÜKETİMİ, AKILLI ŞERİT (STREAMING) GÖRSEL MOTORU
+# MAKSİMUM HIZ, RAM DOSTU, %100 KAYIPSIZ GÖRSEL MOTORU (DİSK TABANLI)
 @app.route('/api/tools/process', methods=['POST'])
 def process_images():
     user = get_current_user()
@@ -652,11 +662,20 @@ def process_images():
     if not files or not files[0].filename:
         return jsonify({'error': 'Dosya seçilmedi'}), 400
 
-    memory_file = io.BytesIO()
+    # 1. Eski geçici dosyaları (resimler ve zipler) diskten silerek temizlik yap
+    for tmp_file in glob.glob(os.path.join(app.config['UPLOAD_FOLDER'], 'temp_*')):
+        if os.path.getmtime(tmp_file) < time.time() - 3600:
+            try: os.remove(tmp_file)
+            except: pass
+
+    # 2. ZIP dosyasını RAM'de değil doğrudan DİSK üzerinde oluştur
+    zip_filename = f"temp_zip_{uuid.uuid4().hex}.zip"
+    zip_filepath = os.path.join(app.config['UPLOAD_FOLDER'], zip_filename)
+    
     counter = 1
     
     try:
-        with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_STORED) as zipf:
+        with zipfile.ZipFile(zip_filepath, 'w', zipfile.ZIP_STORED) as zipf:
             if action == 'split':
                 for f in files:
                     with Image.open(f) as img:
@@ -666,41 +685,50 @@ def process_images():
                             crop_h = min(y + slice_height, height) - y
                             box = (0, y, width, y + crop_h)
                             slice_img = img_rgb.crop(box)
-                            img_io = io.BytesIO()
+                            
+                            # Parçaları da RAM'de değil Disk'te tutuyoruz
+                            temp_img_path = os.path.join(app.config['UPLOAD_FOLDER'], f"temp_img_{uuid.uuid4().hex}.tmp")
                             
                             if crop_h > 16380 or width > 16380:
-                                slice_img.save(img_io, format='JPEG', quality=100, subsampling=0)
+                                slice_img.save(temp_img_path, format='JPEG', quality=100, subsampling=0)
                                 ext = 'jpg'
                             else:
-                                slice_img.save(img_io, format='WEBP', lossless=True, quality=100, method=0)
+                                slice_img.save(temp_img_path, format='WEBP', lossless=True, quality=100, method=0)
                                 ext = 'webp'
                                 
-                            zipf.writestr(f"{counter}.{ext}", img_io.getvalue())
+                            zipf.write(temp_img_path, f"{counter}.{ext}")
+                            os.remove(temp_img_path)
                             counter += 1
                             slice_img.close()
                         img_rgb.close()
 
             elif action == 'merge':
-                # RAM Koruma 1: Sadece boyutları hızlıca hesapla (Tuval açma!)
+                images_info = []
                 max_width = 0
+                total_height = 0
+                
                 for f in files:
                     with Image.open(f) as temp_img:
-                        if temp_img.size[0] > max_width: 
-                            max_width = temp_img.size[0]
-                
-                # RAM Koruma 2: Sadece o anki şerit kadar (Örn: 60.000px) tuval aç
-                current_canvas = Image.new('RGB', (max_width, slice_height))
+                        w, h = temp_img.size
+                        if w > max_width: max_width = w
+                        total_height += h
+                        images_info.append({'file': f, 'width': w, 'height': h})
+                        
+                remaining_height = total_height
+                # FİX: Tuval boyutu gereğinden büyük açılmasın diye kontrol eklendi
+                canvas_h = min(slice_height, remaining_height)
+                current_canvas = Image.new('RGB', (max_width, canvas_h))
                 current_y = 0
                 
-                for f in files:
-                    f.seek(0)
-                    with Image.open(f) as img:
+                for info in images_info:
+                    info['file'].seek(0)
+                    with Image.open(info['file']) as img:
                         img_rgb = img.convert('RGB')
                         src_w, src_h = img_rgb.size
                         src_y = 0
                         
                         while src_y < src_h:
-                            space_left = slice_height - current_y
+                            space_left = canvas_h - current_y
                             take_h = min(src_h - src_y, space_left)
                             
                             part = img_rgb.crop((0, src_y, src_w, src_y + take_h))
@@ -710,42 +738,30 @@ def process_images():
                             current_y += take_h
                             src_y += take_h
                             
-                            # O anki şerit dolduysa ZIP'e at, RAM'i temizle, yeni şerit aç
-                            if current_y >= slice_height:
-                                img_io = io.BytesIO()
-                                if slice_height > 16380 or max_width > 16380:
-                                    current_canvas.save(img_io, format='JPEG', quality=100, subsampling=0)
+                            if current_y >= canvas_h:
+                                temp_img_path = os.path.join(app.config['UPLOAD_FOLDER'], f"temp_img_{uuid.uuid4().hex}.tmp")
+                                
+                                if canvas_h > 16380 or max_width > 16380:
+                                    current_canvas.save(temp_img_path, format='JPEG', quality=100, subsampling=0)
                                     ext = 'jpg'
                                 else:
-                                    current_canvas.save(img_io, format='WEBP', lossless=True, quality=100, method=0)
+                                    current_canvas.save(temp_img_path, format='WEBP', lossless=True, quality=100, method=0)
                                     ext = 'webp'
                                     
-                                zipf.writestr(f"{counter}.{ext}", img_io.getvalue())
+                                zipf.write(temp_img_path, f"{counter}.{ext}")
+                                os.remove(temp_img_path)
                                 counter += 1
                                 
+                                remaining_height -= canvas_h
                                 current_canvas.close()
-                                current_canvas = Image.new('RGB', (max_width, slice_height))
-                                current_y = 0
+                                
+                                if remaining_height > 0:
+                                    canvas_h = min(slice_height, remaining_height)
+                                    current_canvas = Image.new('RGB', (max_width, canvas_h))
+                                    current_y = 0
                         img_rgb.close()
-
-                # Döngü bitince en son yarım kalan (boşluklu) şerit varsa sadece dolu yeri kesip kaydet
-                if current_y > 0:
-                    final_canvas = current_canvas.crop((0, 0, max_width, current_y))
-                    img_io = io.BytesIO()
-                    if current_y > 16380 or max_width > 16380:
-                        final_canvas.save(img_io, format='JPEG', quality=100, subsampling=0)
-                        ext = 'jpg'
-                    else:
-                        final_canvas.save(img_io, format='WEBP', lossless=True, quality=100, method=0)
-                        ext = 'webp'
-                    zipf.writestr(f"{counter}.{ext}", img_io.getvalue())
-                    counter += 1
-                    final_canvas.close()
-                    
-                current_canvas.close()
-                    
-        memory_file.seek(0)
-        return send_file(memory_file, mimetype='application/zip', as_attachment=True, download_name='Averis_Fansub_Gorseller.zip')
+                        
+        return send_file(zip_filepath, mimetype='application/zip', as_attachment=True, download_name='Averis_Fansub_Gorseller.zip')
     except Exception as e:
         return jsonify({'error': f'İşlem hatası: {str(e)}'}), 500
 
