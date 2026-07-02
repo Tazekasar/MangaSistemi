@@ -9,7 +9,6 @@ import io
 import re
 import time
 import glob
-import gc
 from PIL import Image
 
 Image.MAX_IMAGE_PIXELS = None 
@@ -327,6 +326,8 @@ def release_chapter(chapter_id, task):
         cur.execute('UPDATE chapters SET proofreader_id = NULL WHERE id = ?', (chapter_id,))
     elif task != 'CLEANING' and task != 'PROOFREADING' and ch['assigned_to'] == user['id']:
         cur.execute('UPDATE chapters SET assigned_to = NULL WHERE id = ?', (chapter_id,))
+    elif task == 'PUBLISHING' and ch['assigned_to'] == user['id']:
+        cur.execute('UPDATE chapters SET assigned_to = NULL WHERE id = ?', (chapter_id,))
     else:
         return jsonify({'error': 'Bu görevi bırakamazsınız'}), 403
 
@@ -469,11 +470,12 @@ def download_chapter_files(chapter_id, stage):
                     
                 zipf.write(filepath, archive_name)
     
+    # 🎯 KULLANICININ İSTEDİĞİ EN MANTIKLI DOSYA İSİMLENDİRMESİ
     stage_tr_map = {
-        'PENDING_TRANSLATION': 'Çeviri_Metni',
-        'PENDING_CLEANING': 'Temiz_Sayfalar',
-        'PENDING_PROOFREADING': 'Redakte_Metni',
-        'PENDING_TYPESETTING': 'Dizgilenmis_Sayfalar',
+        'PENDING_TRANSLATION': 'Ham_Ceviri_Dosyasi',
+        'PENDING_CLEANING': 'Temizlenmis_Sayfalar',
+        'PENDING_PROOFREADING': 'Redakte_Edilmis_Metin',
+        'PENDING_TYPESETTING': 'Dizgisi_Bitmis_Sayfalar',
         'PUBLISHED': 'Yayin_Kopyasi',
         'ALL': 'Tum_Gecmis'
     }
@@ -646,146 +648,6 @@ def delete_chapter_api(chapter_id):
         return jsonify({'error': f'Hata oluştu: {str(e)}'}), 500
     finally:
         conn.close()
-
-# YENİ VE %100 ÇÖKMEYE KARŞI KORUMALI (SIFIR RAM) GÖRSEL MOTORU
-@app.route('/api/tools/process', methods=['POST'])
-def process_images():
-    user = get_current_user()
-    if not user: return jsonify({'error': 'Unauthorized'}), 403
-
-    action = request.form.get('action') 
-    slice_height = int(request.form.get('slice_height', 3000))
-    files = request.files.getlist('files')
-
-    if not files or not files[0].filename:
-        return jsonify({'error': 'Dosya seçilmedi'}), 400
-
-    # 1. Eski geçici çöpleri temizle
-    for tmp_file in glob.glob(os.path.join(app.config['UPLOAD_FOLDER'], 'temp_*')):
-        if os.path.getmtime(tmp_file) < time.time() - 3600:
-            try: os.remove(tmp_file)
-            except: pass
-
-    # 2. RAM Şişmesini Önlemek İçin: Tüm yüklenen dosyaları anında DİSK'e yazıyoruz.
-    # Böylece Flask/Werkzeug arka planda o ağır dosyaları RAM'de tutmayı bırakıyor.
-    uploaded_paths = []
-    for f in files:
-        safe_name = secure_filename(f.filename)
-        t_path = os.path.join(app.config['UPLOAD_FOLDER'], f"raw_upl_{uuid.uuid4().hex}_{safe_name}")
-        f.save(t_path)
-        uploaded_paths.append(t_path)
-
-    zip_filename = f"temp_zip_{uuid.uuid4().hex}.zip"
-    zip_filepath = os.path.join(app.config['UPLOAD_FOLDER'], zip_filename)
-    
-    counter = 1
-    
-    try:
-        with zipfile.ZipFile(zip_filepath, 'w', zipfile.ZIP_STORED) as zipf:
-            if action == 'split':
-                for fpath in uploaded_paths:
-                    # Bellek Eşleme (Mmap): Dosyayı diskin üzerinden canlı okur, RAM'e kopyalamaz
-                    with Image.open(fpath) as img:
-                        width, height = img.size
-                        for y in range(0, height, slice_height):
-                            crop_h = min(slice_height, height - y)
-                            box = (0, y, width, y + crop_h)
-                            
-                            # KORUMA 1: Sadece kesilen milimetrik bölgeyi işliyoruz! 
-                            # Bu sayede 60.000 piksellik resim RAM'de yer kaplamıyor.
-                            slice_img_raw = img.crop(box)
-                            slice_rgb = slice_img_raw.convert('RGB')
-                            
-                            temp_img_path = os.path.join(app.config['UPLOAD_FOLDER'], f"temp_img_{uuid.uuid4().hex}.tmp")
-                            
-                            if crop_h > 16380 or width > 16380:
-                                slice_rgb.save(temp_img_path, format='JPEG', quality=100, subsampling=0)
-                                ext = 'jpg'
-                            else:
-                                slice_rgb.save(temp_img_path, format='WEBP', lossless=True, quality=100, method=0)
-                                ext = 'webp'
-                                
-                            zipf.write(temp_img_path, f"{counter}.{ext}")
-                            os.remove(temp_img_path)
-                            counter += 1
-                            
-                            slice_rgb.close()
-                            slice_img_raw.close()
-                            
-                            # KORUMA 2: Her kesimde RAM'i zorla temizle
-                            gc.collect()
-
-            elif action == 'merge':
-                images_info = []
-                max_width = 0
-                total_height = 0
-                
-                for fpath in uploaded_paths:
-                    with Image.open(fpath) as temp_img:
-                        w, h = temp_img.size
-                        if w > max_width: max_width = w
-                        total_height += h
-                        images_info.append({'path': fpath, 'width': w, 'height': h})
-                        
-                remaining_height = total_height
-                canvas_h = min(slice_height, remaining_height)
-                current_canvas = Image.new('RGB', (max_width, canvas_h))
-                current_y = 0
-                
-                for info in images_info:
-                    with Image.open(info['path']) as img:
-                        img_rgb = img.convert('RGB')
-                        src_w, src_h = img_rgb.size
-                        src_y = 0
-                        
-                        while src_y < src_h:
-                            space_left = canvas_h - current_y
-                            take_h = min(src_h - src_y, space_left)
-                            
-                            part = img_rgb.crop((0, src_y, src_w, src_y + take_h))
-                            current_canvas.paste(part, (0, current_y))
-                            part.close()
-                            
-                            current_y += take_h
-                            src_y += take_h
-                            
-                            if current_y >= canvas_h:
-                                temp_img_path = os.path.join(app.config['UPLOAD_FOLDER'], f"temp_img_{uuid.uuid4().hex}.tmp")
-                                
-                                if canvas_h > 16380 or max_width > 16380:
-                                    current_canvas.save(temp_img_path, format='JPEG', quality=100, subsampling=0)
-                                    ext = 'jpg'
-                                else:
-                                    current_canvas.save(temp_img_path, format='WEBP', lossless=True, quality=100, method=0)
-                                    ext = 'webp'
-                                    
-                                zipf.write(temp_img_path, f"{counter}.{ext}")
-                                os.remove(temp_img_path)
-                                counter += 1
-                                
-                                remaining_height -= canvas_h
-                                current_canvas.close()
-                                gc.collect()
-                                
-                                if remaining_height > 0:
-                                    canvas_h = min(slice_height, remaining_height)
-                                    current_canvas = Image.new('RGB', (max_width, canvas_h))
-                                    current_y = 0
-                        img_rgb.close()
-                        gc.collect()
-                        
-        return send_file(zip_filepath, mimetype='application/zip', as_attachment=True, download_name='Averis_Fansub_Gorseller.zip')
-    
-    except Exception as e:
-        return jsonify({'error': f'İşlem hatası: {str(e)}'}), 500
-        
-    finally:
-        # KORUMA 3: İşlem başarıyla bitse de çökse de diske yazılan geçici dosyaları sil!
-        for p in uploaded_paths:
-            try:
-                os.remove(p)
-            except:
-                pass
 
 ROLE_MAP_TASK = {
     'TRANSLATION': 'Translator',

@@ -13,7 +13,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
     <style>
-        /* 🎯 ZOOM ENGELLEME CSS'İ */
         body { font-family: 'Urbanist', sans-serif; background-color: #0f172a; color: #e2e8f0; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
         .handdrawn-border { border: 2px solid #334155; box-shadow: 3px 3px 0px #1e293b; }
         
@@ -26,7 +25,6 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .progress-bar-bg { transition: width 0.3s ease-out; }
 
-        /* 🎯 MOBİL İKİLİ GÖRÜNÜMÜN "KISA VE KUTU GİBİ" ŞIK HALİ */
         @media (max-width: 767px) {
             input, select, textarea { font-size: 16px !important; }
             
@@ -97,7 +95,9 @@
                     <h3 class="text-xs font-bold text-emerald-400 uppercase">👑 Sistem Kontrol Paneli</h3>
                     <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 space-y-3">
                         <div class="text-[11px] font-bold text-emerald-400 uppercase border-b border-slate-700 pb-1">Ekip Üyeleri & Roller</div>
+                        
                         <div id="user-management-list" class="space-y-2 max-h-64 overflow-y-auto pr-1"></div>
+                        
                         <div class="mt-3 pt-3 border-t border-slate-700 space-y-2">
                             <input type="text" id="new-user-name" placeholder="Kullanıcı Adı" class="w-full bg-slate-900 text-sm rounded-lg p-2.5 text-white border border-slate-700">
                             <input type="password" id="new-user-pass" placeholder="Şifre" class="w-full bg-slate-900 text-sm rounded-lg p-2.5 text-white border border-slate-700">
@@ -235,11 +235,11 @@
                             <label class="block">
                                 <span class="text-xs font-bold text-slate-300 block mb-1">Çıktı Dilim Yüksekliği (px)</span>
                                 <select id="merge-height" class="w-full bg-slate-800 text-sm rounded-lg p-2.5 text-white border border-slate-600 focus:border-amber-500">
-                                    <option value="15000">15.000 px</option>
+                                    <option value="15000" selected>15.000 px</option>
                                     <option value="20000">20.000 px</option>
                                     <option value="30000">30.000 px</option>
                                     <option value="45000">45.000 px</option>
-                                    <option value="60000" selected>60.000 px</option>
+                                    <option value="60000">60.000 px</option>
                                 </select>
                                 <p class="text-[10px] text-slate-500 mt-1">Not: Mobil kullanıcıları için üst sınır 15.000 px'dir. Farklı bir seçim yapılırsa görsellerde hatalar meydana gelebilir.</p>
                             </label>
@@ -359,7 +359,6 @@
             if(viewName === 'stats') loadStats();
         }
 
-        // 🎯 ARAÇLAR KISMINDA SEÇİLEN DOSYALARIN İSİMLERİNİ GÖSTERME
         function updateFileNames(inputId, displayId) {
             const input = document.getElementById(inputId);
             const display = document.getElementById(displayId);
@@ -478,9 +477,6 @@
             renderUI();
         }
 
-        /* -------------------------------------------------------------
-           🎯 KULLANICI YÖNETİM PANELİ (ADMİNLER İÇİN KUSURSUZ GERİ DÖNDÜ)
-           ------------------------------------------------------------- */
         function renderUserManagement() {
             const listDiv = document.getElementById('user-management-list'); listDiv.innerHTML = '';
             gData.users.forEach(u => {
@@ -499,13 +495,9 @@
             });
         }
 
-        /* -------------------------------------------------------------
-           🎯 KART RENKLERİ TAM İSTEDİĞİN GİBİ AYARLANDI
-           ------------------------------------------------------------- */
         function renderUI() {
             const myRoles = me.roles.split(','); const isCtrl = myRoles.includes('Controller');
             
-            // ADMİN PANELİ KONTROLÜ
             document.getElementById('admin-panel').classList.toggle('hidden', !isCtrl);
             
             ['PENDING_TRANSLATION', 'PENDING_CLEANING', 'PENDING_PROOFREADING', 'PENDING_TYPESETTING', 'PENDING_PUBLISHING'].forEach(stage => document.getElementById(`lane-${stage}`).classList.toggle('hidden', !(isCtrl || myRoles.includes(ROLE_MAP_TASK[stage.split('_')[1]]))));
@@ -541,13 +533,12 @@
                         
                         const srcLink = ch.source_link ? `<a href="${ch.source_link}" target="_blank" class="text-[11px] text-blue-400 hover:text-blue-300 underline truncate block mt-1 flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg> Kaynak</a>` : '';
 
-                        // 🎯 KARTLAR İÇİN TAM İSTEDİĞİN RENKLENDİRME (KANBAN)
                         let cardBgClass = 'bg-slate-900 border-slate-700';
-                        if (task === 'TRANSLATION') cardBgClass = 'bg-amber-950/40 border-amber-800/80'; // Sarı
-                        else if (task === 'CLEANING') cardBgClass = 'bg-cyan-950/40 border-cyan-800/80'; // Açık Mavi
-                        else if (task === 'PROOFREADING') cardBgClass = 'bg-blue-950/40 border-blue-800/80'; // Koyu Mavi
-                        else if (task === 'TYPESETTING') cardBgClass = 'bg-purple-950/40 border-purple-800/80'; // Mor
-                        else if (task === 'PUBLISHING') cardBgClass = 'bg-rose-950/40 border-rose-800/80'; // Kırmızı Siyah arası
+                        if (task === 'TRANSLATION') cardBgClass = 'bg-amber-950/40 border-amber-800/80'; 
+                        else if (task === 'CLEANING') cardBgClass = 'bg-[#183d33]/80 border-[#23594b]/80'; // 🎯 İSTENEN KOYU YEŞİL
+                        else if (task === 'PROOFREADING') cardBgClass = 'bg-blue-950/40 border-blue-800/80'; 
+                        else if (task === 'TYPESETTING') cardBgClass = 'bg-purple-950/40 border-purple-800/80'; 
+                        else if (task === 'PUBLISHING') cardBgClass = 'bg-rose-950/40 border-rose-800/80'; 
                         
                         laneEl.innerHTML += `
                             <div class="handdrawn-border ${cardBgClass} p-4 md:p-5 rounded-xl flex flex-col gap-3 relative hover:opacity-90 transition-opacity shadow-md w-full">
@@ -569,10 +560,9 @@
         }
 
         function createSidebarCard(ch, task, assigneeId) {
-            // 🎯 SİDEBAR KARTLARI İÇİN UYUMLU RENKLENDİRME
             let sbBgClass = 'bg-slate-800 border-slate-700';
             if (task === 'TRANSLATION') sbBgClass = 'bg-amber-950/30 border-amber-900/60'; 
-            else if (task === 'CLEANING') sbBgClass = 'bg-cyan-950/30 border-cyan-900/60'; 
+            else if (task === 'CLEANING') sbBgClass = 'bg-[#183d33]/60 border-[#23594b]/60'; // 🎯 İSTENEN KOYU YEŞİL
             else if (task === 'PROOFREADING') sbBgClass = 'bg-blue-950/30 border-blue-900/60'; 
             else if (task === 'TYPESETTING') sbBgClass = 'bg-purple-950/30 border-purple-900/60'; 
             else if (task === 'PUBLISHING') sbBgClass = 'bg-rose-950/30 border-rose-900/60';
@@ -617,7 +607,6 @@
                 dHtml += `<button onclick="window.open('/api/chapters/download/${ch.id}/ALL')" class="text-[11px] font-bold bg-rose-700 hover:bg-rose-600 transition-colors px-3 py-3 rounded-lg text-white w-full text-center mb-3 shadow-lg active:scale-95 border border-rose-500">📦 TÜM GEÇMİŞİ İNDİR (ZIP)</button>`;
             }
 
-            // 🎯 "BIRAK" BUTONU YAYINLAMA AŞAMASINA DA GERİ GELDİ!
             const releaseBtn = `<button onclick="releaseChapter(${ch.id}, '${task}')" class="absolute top-3 right-3 text-[10px] font-bold text-rose-300 hover:text-white bg-rose-950 hover:bg-rose-700 px-3 py-1.5 rounded-lg transition-colors border border-rose-800/50 shadow-sm z-10">❌ Bırak</button>`;
 
             let actionBtn = `
@@ -670,13 +659,11 @@
         async function claimChapter(id, task) { const {ok, data} = await safeFetch(`/api/chapters/claim/${id}/${task}`, {method: 'POST'}); if(ok && data.success) loadData(); else alert(data.error); }
         async function releaseChapter(id, task) { if(!confirm("Görevi bırakmak istediğinize emin misiniz?")) return; const {ok, data} = await safeFetch(`/api/chapters/release/${id}/${task}`, {method: 'POST'}); if(ok && data.success) loadData(); else alert(data.error); }
         
-        // 🎯 KATI DOSYA UZANTI DENETİMİ (HTML ACCEPT YERİNE JS İLE KESİN ENGEL)
         function uploadMultipleFiles(id, task) {
             const input = document.getElementById(`fi-${id}-${task}`);
             const files = input.files;
             if (!files.length) return;
 
-            // Dosya Uzantısı Kuralı!
             let allowedExt = ['png', 'jpg', 'jpeg', 'webp'];
             if (task === 'TRANSLATION' || task === 'PROOFREADING') {
                 allowedExt = ['txt', 'doc', 'docx'];
@@ -687,7 +674,7 @@
                 if (!allowedExt.includes(ext)) {
                     alert(`🚨 HATA: Yüklemeye çalıştığınız dosyanın türü yanlış!\n\n${task === 'TRANSLATION' || task === 'PROOFREADING' ? 'Çevirmen ve Redaktörler sadece Metin (.txt, .doc)' : 'Temizlikçi ve Dizgiciler sadece Resim (.jpg, .png, .webp)'} yükleyebilir.`);
                     input.value = '';
-                    return; // İŞLEMİ ANINDA İPTAL ET
+                    return; 
                 }
             }
 
@@ -922,7 +909,7 @@
                 window.URL.revokeObjectURL(url);
                 
                 fileInput.value = '';
-                document.getElementById(`names-${action}`).innerHTML = ''; // Dosya isimlerini temizle
+                document.getElementById(`names-${action}`).innerHTML = '';
                 
             } catch (err) {
                 console.error(err);
